@@ -33,10 +33,9 @@ int card_portes(int h, int l)
     return (l - 2) * (h - 1) + (l - 1) * (h - 2);
 }
 
-void disp_portes(tab_nk *tab, int h, int l)
+void disp_portes(tab_nk *tab)
 {
-    int cst = card_portes(h, l);
-    for (int i = 0; i < cst; i++){
+    for (int i = 0; i < tab -> k; i++){
 	printf("Coord: ");
 	printf("%d ", tab -> tab_ouvr[i].i);
 	printf("%d ", tab -> tab_ouvr[i].j);
@@ -54,18 +53,19 @@ tab_nk *init_tab_ouvr(int h, int l)
     assert(h > 0 && l > 0);
     tab_nk *tab = malloc(sizeof(tab_nk));
     assert(tab != NULL);
-    tab -> tab_ouvr = malloc(sizeof(porte)*card_portes(h, l));
+    tab -> k = card_portes(h, l);
+    tab -> tab_ouvr = malloc(tab -> k * sizeof(porte));
     assert(tab -> tab_ouvr != NULL);
-    tab -> k = 0;
+    int k = 0;
     for(int i = 1; i < h; i++){
         for(int j = 1; j < l; j++){
             int centre = (i - 1) * (l - 1) + (j - 1);
             if (i != h-1)
-            tab -> tab_ouvr[(tab -> k)++] =
-                (porte) {i, j, centre, centre + (l - 1), B};
+		tab -> tab_ouvr[k++] =
+		    (porte) {i, j, centre, centre + (l - 1), B};
             if (j != l-1)
-            tab -> tab_ouvr[(tab -> k)++] =
-                (porte) {i, j, centre, centre + 1, D};
+		tab -> tab_ouvr[k++] =
+		    (porte) {i, j, centre, centre + 1, D};
         }
     }
     return tab;	    
@@ -120,41 +120,109 @@ void disp_laby(matrice *pm)
     printf("\n");
 }
 
-void del_porte(tab_nk *tab, int position)
+void del_porte(tab_nk *tab, int i)
 {
-    porte tmp = tab -> tab_ouvr[position];
-    tab -> tab_ouvr[position] = tab -> tab_ouvr[(tab -> k) - 1];
-    tab -> tab_ouvr[(tab -> k) - 1] = tmp;
-    (tab -> k)--;
+  tab -> tab_ouvr[i] = tab -> tab_ouvr[(tab -> k) - 1];
+  tab -> k--;
+  /// inutile... pourquoi deplacer tab -> tab_ouvr[position]
+  /// en fin de tableau ?
+  //  porte tmp = tab -> tab_ouvr[position];
+  //  tab -> tab_ouvr[position] = tab -> tab_ouvr[(tab -> k) - 1];
+  //  tab -> tab_ouvr[(tab -> k) - 1] = tmp;
+  //  (tab -> k)--;
 }
+
+/* inutile de refaire un parcours, voir ci-dessous... 
+ * et il y a un probleme : apres une suppression, il faut 
+ * faire i--, pour que le i++ laisse le i sur place 
+*/
+void sort_portes(tab_nk *tab)
+{
+    int i;
+        for (i = 0; i < tab -> k; i++) {
+        printf("%d\n", ((tab -> tab_ouvr[i].z1) == (tab -> tab_ouvr[i].z2)));
+	        if ((tab -> tab_ouvr[i].z1) == (tab -> tab_ouvr[i].z2))
+	            del_porte(tab, i);
+        }
+}
+
+
+/* inutile... la condition pour continuer l'ouverture de 
+ * portes est simplement qu'il reste des portes.
+ */
+/*
+short zones_diff(tab_nk *tab, int hauteur, int largeur)
+{
+    int i, zone = (tab -> tab_ouvr[0]).z1;
+    if (zone != (tab -> tab_ouvr[0]).z2)
+	return 1;
+    for (i = 1; i < card_portes(hauteur, largeur); i++) {
+	if (zone != (tab -> tab_ouvr[i]).z1)
+	    return 1;
+	if (zone != (tab -> tab_ouvr[i]).z2)
+	    return 1;
+    }
+    return 0;
+}
+*/
+
+// inutile de connaitre h et l
+//void gen_laby(tab_nk *tab, int h, int l, matrice *pm)
+void gen_laby(tab_nk *tab, matrice *pm)
+{
+    while (tab -> k)
+	{
+	  // probleme : sort_portes doit etre
+	  // fait immediatement *apres* la jonction
+	  // de deux zones.
+	  /*	    
+		    disp_portes(tab, h, l);
+		    sort_portes(tab);
+		    disp_portes(tab, h, l);
+	  */
+	  int i = rand() % (tab -> k);
+	  porte p = tab -> tab_ouvr[i];
+	  del_porte(tab, i);
+	  pm -> contenu[p.i][p.j] = pm -> contenu[p.i][p.j]^p.dir;
+	  for(i = 0; i < tab -> k; i++) {
+	    if (tab -> tab_ouvr[i].z1 == p.z2)
+	      tab -> tab_ouvr[i].z1 = p.z1;
+	    if (tab -> tab_ouvr[i].z2 == p.z2)
+	      tab -> tab_ouvr[i].z2 = p.z1;
+	    if  (tab -> tab_ouvr[i].z1 ==
+		 tab -> tab_ouvr[i].z2)
+	      {
+		del_porte(tab, i);
+		i--; // pour rester sur place.
+	      }
+	  }
+	  /* il faudra eliminer les portes qui, apres mise a jour, 
+	   * ne separeront plus deux zones distinctes. autant le 
+	   * faire directement dans la boucle ci-dessus.
+	   */
+	  /*
+	  for (i = 0; i < card_portes(h, l); i++) {
+	    if (tab -> tab_ouvr[i].z1 == z_change) 
+	      tab -> tab_ouvr[i].z1 = maPorte.z2;
+	    if (tab -> tab_ouvr[i].z2 == z_change) 
+	      tab -> tab_ouvr[i].z2 = maPorte.z2;
+	  }
+	  */
+
+	}
+}
+
 
 int main()
 {
-    int largeur = 3, hauteur = 3;
+    int largeur = 4, hauteur = 4;
     int h = hauteur + 1, l = largeur + 1;
-
-    tab_nk *tab = init_tab_ouvr(hauteur, largeur);
-    disp_portes(tab, hauteur, largeur);
-
+    tab_nk *tab = init_tab_ouvr(h, l);
     matrice *pm = init_mat(l, h);
-    disp_laby(pm);
-    
-    int nbAleat;
     srand(time(NULL));
-    nbAleat = rand() % (tab -> k);
-    printf("Ind de la porte selectionnee: %d\n", nbAleat);
-    
-    porte maPorte = tab -> tab_ouvr[nbAleat];
-    printf("%d %d\n", maPorte.i, maPorte.j);
-    pm -> contenu[maPorte.i + 1][maPorte.j + 1] = 
-            ((pm -> contenu[maPorte.i][maPorte.j])^(maPorte.dir));
+    gen_laby(tab, pm);
+    //gen_laby(tab, h, l, pm);
+    //disp_portes(tab, h, l);
     disp_laby(pm);
-    
-    del_porte(tab, nbAleat);
-    disp_portes(tab, hauteur, largeur);
-
-    
     return 0;
 }
-	 
-    
