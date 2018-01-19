@@ -1,5 +1,10 @@
-#define B 1 //Ferme en bas
-#define D 2 //Ferme a droite
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+#include <assert.h>
+
+#define PB 1 //Ferme en bas
+#define PD 2 //Ferme a droite
 
 
 typedef struct {

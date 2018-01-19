@@ -1,9 +1,12 @@
+#include "SDL2/SDL.h"
 #include "source.h"
+
 
 typedef enum
 {
-QUIT, CONTINUE
-}status;
+    QUIT, CONTINUE
+} status;
+
 
 void draw_laby(matrice *pm, int marg, SDL_Renderer *renderer);
 

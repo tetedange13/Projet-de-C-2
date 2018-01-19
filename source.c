@@ -1,8 +1,5 @@
 #include "source.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <assert.h>
-#include <time.h>
+
 
 int card_portes(int h, int l)
 {
@@ -38,10 +35,10 @@ tab_nk *init_tab_ouvr(int h, int l)
             int centre = (i - 1) * (l - 1) + (j - 1);
             if (i != h-1)
 		tab -> tab_ouvr[k++] =
-		    (porte) {i, j, centre, centre + (l - 1), B};
+		    (porte) {i, j, centre, centre + (l - 1), PB};
             if (j != l-1)
 		tab -> tab_ouvr[k++] =
-		    (porte) {i, j, centre, centre + 1, D};
+		    (porte) {i, j, centre, centre + 1, PD};
         }
     }
     return tab;	    
@@ -58,10 +55,10 @@ matrice *init_mat (int largeur, int hauteur)
     for (i = 0; i < hauteur; i++) { 
         pm -> contenu[i] = malloc(largeur * sizeof(short));
         if (i == 0) pm -> contenu[i][0] = 0;
-        else pm -> contenu[i][0] = D;
+        else pm -> contenu[i][0] = PD;
         for (j = 1; j < largeur; j++)
-            if (i == 0) pm -> contenu[i][j] = B;
-            else pm -> contenu[i][j] = (B | D);
+            if (i == 0) pm -> contenu[i][j] = PB;
+            else pm -> contenu[i][j] = (PB | PD);
     }
     return pm;
 }
@@ -85,9 +82,9 @@ void disp_laby(matrice *pm)
     for (i = 0; i < (pm -> hauteur); i++) {
         for (j = 0; j < (pm -> largeur); j++) {
             switch (pm -> contenu[i][j]) {
-            case (B | D) : printf("_|"); break;
-            case B : printf("_ "); break;
-            case D : printf(" |"); break;
+            case (PB | PD) : printf("_|"); break;
+            case PB : printf("_ "); break;
+            case PD : printf(" |"); break;
             default :  printf("  "); break;
             }
         }
@@ -172,33 +169,7 @@ void gen_laby(tab_nk *tab, matrice *pm)
 		i--; // pour rester sur place.
 	      }
 	  }
-	  /* il faudra eliminer les portes qui, apres mise a jour, 
-	   * ne separeront plus deux zones distinctes. autant le 
-	   * faire directement dans la boucle ci-dessus.
-	   */
-	  /*
-	  for (i = 0; i < card_portes(h, l); i++) {
-	    if (tab -> tab_ouvr[i].z1 == z_change) 
-	      tab -> tab_ouvr[i].z1 = maPorte.z2;
-	    if (tab -> tab_ouvr[i].z2 == z_change) 
-	      tab -> tab_ouvr[i].z2 = maPorte.z2;
-	  }
-	  */
 
 	}
 }
 
-
-int main()
-{
-    int largeur = 4, hauteur = 4;
-    int h = hauteur + 1, l = largeur + 1;
-    tab_nk *tab = init_tab_ouvr(h, l);
-    matrice *pm = init_mat(l, h);
-    srand(time(NULL));
-    gen_laby(tab, pm);
-    //gen_laby(tab, h, l, pm);
-    //disp_portes(tab, h, l);
-    disp_laby(pm);
-    return 0;
-}

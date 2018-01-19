@@ -1,7 +1,4 @@
 #include "lab2D.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include "SDL.h"
 
 
 void draw_laby(matrice *pm, int marg, SDL_Renderer *renderer){
@@ -9,7 +6,7 @@ void draw_laby(matrice *pm, int marg, SDL_Renderer *renderer){
     for (i = 0; i < (pm -> hauteur); i++) {
         for (j = 0; j < (pm -> largeur); j++) {
             switch (pm -> contenu[i][j]) {
-            case (B | D) : 
+            case (PB | PD) : 
             //"_"
             SDL_RenderDrawLine(renderer, (i+1)*marg, (j+1)*marg, 
                                          (i+2)*marg, (j+1)*marg);
@@ -17,26 +14,38 @@ void draw_laby(matrice *pm, int marg, SDL_Renderer *renderer){
             SDL_RenderDrawLine(renderer, (i+1)*marg, (j+1)*marg, 
                                          (i+1)*marg, j*marg);
             break;
-            case B :
+            case PB :
             //"_ "
             SDL_RenderDrawLine(renderer, (i+1)*marg, (j+1)*marg, 
                                          (i+2)*marg, (j+1)*marg);
             break;
-            case D :
+            case PD :
             //" |"
             SDL_RenderDrawLine(renderer, (i+1)*marg, (j+1)*marg, 
                                          (i+1)*marg, j*marg);            
             break;
             }
+            SDL_RenderPresent(renderer);
+            SDL_Delay(1000);
+            
         }
     }
+    SDL_RenderPresent(renderer);
 }
 
 int main(int argc, char *argv[]) {
     SDL_Window *window = NULL;
     SDL_Renderer *renderer = NULL;
     int width = 640, height = 640;
-    
+    int largeur = 3, hauteur = 3;
+    int h = hauteur + 1, l = largeur + 1;
+    tab_nk *tab = init_tab_ouvr(h, l);
+    matrice *pm = init_mat(l, h);
+    srand(time(NULL));
+    gen_laby(tab, pm);
+    //gen_laby(tab, h, l, pm);
+    //disp_portes(tab, h, l);
+    disp_laby(pm); 
     status etat = CONTINUE;
     if (SDL_Init(SDL_INIT_VIDEO) != 0) {
         fprintf(stderr,
@@ -73,8 +82,7 @@ int main(int argc, char *argv[]) {
     SDL_RenderClear(renderer); //fond blanc
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     //SDL_RenderDrawLine(renderer, 0, 0, 320, 240);
-    SDL_RenderPresent(renderer);
-    
+    draw_laby(pm, 50, renderer);
     do {
         SDL_Event e;
         if (SDL_PollEvent(&e)) {
