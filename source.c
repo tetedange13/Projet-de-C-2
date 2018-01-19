@@ -1,32 +1,8 @@
+#include "source.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
 #include <time.h>
-
-#define B 1 //Ferme en bas
-#define D 2 //Ferme a droite
-
-typedef struct {
-    //Coordonnées
-    int i;
-    int j;
-    //Zone
-    int z1;
-    int z2;
-    //Dir
-    short dir;
-} porte;
-
-typedef struct {
-    int largeur;
-    int hauteur;
-    short **contenu;
-} matrice;
-
-typedef struct {
-    porte *tab_ouvr;
-    int k;
-} tab_nk;
 
 int card_portes(int h, int l)
 {
