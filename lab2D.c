@@ -1,26 +1,28 @@
 #include "lab2D.h"
 void draw_laby(matrice *pm, int marg, SDL_Renderer *renderer){
-    int i, j, x = marg, y = marg;
+    int i, j, x, y;
     for (i = 0; i < (pm -> hauteur); i++) {
+        x = marg;
+        y = (i+1)*marg;
         for (j = 0; j < (pm -> largeur); j++) {
             switch (pm -> contenu[i][j]) {
             case (PB | PD) : 
             //"_"
             SDL_RenderDrawLine(renderer, x, y, 
-                                         x+marg, y);
+                                         x-marg, y);
             //"|"
             SDL_RenderDrawLine(renderer, x, y, 
-                                         x, y+marg);
+                                         x, y-marg);
             break;
             case PB :
             //"_ "
             SDL_RenderDrawLine(renderer, x, y, 
-                                         x+marg, y);
+                                         x-marg, y);
             break;
             case PD :
             //" |"
             SDL_RenderDrawLine(renderer, x, y, 
-                                         x, y+marg);         
+                                         x, y-marg);         
             break;
             }
             x+=marg;     
@@ -33,15 +35,14 @@ void draw_laby(matrice *pm, int marg, SDL_Renderer *renderer){
 int main(int argc, char *argv[]) {
     SDL_Window *window = NULL;
     SDL_Renderer *renderer = NULL;
-    int width = 640, height = 640;
-    int largeur = 3, hauteur = 3;
+    int width = 640, height = 640, marg;
+    int largeur = 30, hauteur = 30;
     int h = hauteur + 1, l = largeur + 1;
+    marg = width/(largeur+2);
     tab_nk *tab = init_tab_ouvr(h, l);
     matrice *pm = init_mat(l, h);
     srand(time(NULL));
     gen_laby(tab, pm);
-    //gen_laby(tab, h, l, pm);
-    //disp_portes(tab, h, l);
     disp_laby(pm); 
     status etat = CONTINUE;
     if (SDL_Init(SDL_INIT_VIDEO) != 0) {
@@ -79,13 +80,13 @@ int main(int argc, char *argv[]) {
     SDL_RenderClear(renderer); //fond blanc
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     //SDL_RenderDrawLine(renderer, 0, 0, 320, 240);
-    draw_laby(pm, 20, renderer);
+    draw_laby(pm, marg, renderer);
     do {
         SDL_Event e;
         if (SDL_PollEvent(&e)) {
 	    switch (e.type) {
 	    case SDL_QUIT :
-		printf("fermeture de la fenetre.\n"); 
+		printf("Exit.\n"); 
 		etat = QUIT;
 		break;
         }
@@ -97,4 +98,3 @@ int main(int argc, char *argv[]) {
 
     return 0;
 }
-
