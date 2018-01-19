@@ -1,34 +1,31 @@
 #include "lab2D.h"
-
-
 void draw_laby(matrice *pm, int marg, SDL_Renderer *renderer){
-    int i, j;
+    int i, j, x = marg, y = marg;
     for (i = 0; i < (pm -> hauteur); i++) {
         for (j = 0; j < (pm -> largeur); j++) {
             switch (pm -> contenu[i][j]) {
             case (PB | PD) : 
             //"_"
-            SDL_RenderDrawLine(renderer, (i+1)*marg, (j+1)*marg, 
-                                         (i+2)*marg, (j+1)*marg);
+            SDL_RenderDrawLine(renderer, x, y, 
+                                         x+marg, y);
             //"|"
-            SDL_RenderDrawLine(renderer, (i+1)*marg, (j+1)*marg, 
-                                         (i+1)*marg, j*marg);
+            SDL_RenderDrawLine(renderer, x, y, 
+                                         x, y+marg);
             break;
             case PB :
             //"_ "
-            SDL_RenderDrawLine(renderer, (i+1)*marg, (j+1)*marg, 
-                                         (i+2)*marg, (j+1)*marg);
+            SDL_RenderDrawLine(renderer, x, y, 
+                                         x+marg, y);
             break;
             case PD :
             //" |"
-            SDL_RenderDrawLine(renderer, (i+1)*marg, (j+1)*marg, 
-                                         (i+1)*marg, j*marg);            
+            SDL_RenderDrawLine(renderer, x, y, 
+                                         x, y+marg);         
             break;
             }
-            SDL_RenderPresent(renderer);
-            SDL_Delay(1000);
-            
+            x+=marg;     
         }
+        y+=marg;
     }
     SDL_RenderPresent(renderer);
 }
@@ -82,7 +79,7 @@ int main(int argc, char *argv[]) {
     SDL_RenderClear(renderer); //fond blanc
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     //SDL_RenderDrawLine(renderer, 0, 0, 320, 240);
-    draw_laby(pm, 50, renderer);
+    draw_laby(pm, 20, renderer);
     do {
         SDL_Event e;
         if (SDL_PollEvent(&e)) {
