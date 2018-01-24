@@ -173,3 +173,35 @@ void gen_laby(tab_nk *tab, matrice *pm)
 	}
 }
 
+double dist(int x1, int y1, int x2, int y2)
+{ //Calcule la dist euclidienne (en 2D) entre 2 points de coord connues
+    
+    return sqrt( (x1-x2)*(x1-x2) + (y1-y2)*(y1-y2) );
+}
+
+double angle(int xA, int yA, int xB, int yB, int xC, int yC)
+{ //Calcule l'angle ABC (en rad) formé par 3 atomes de coord connues 
+
+    //Calcul des coord des 2 vect AB et BC:    
+    int xAB = xA - xB, yAB = yA - yB;
+    int xBC= xC-xB, yBC = yC-yB;
+    
+    double prod_scal = (xAB * xBC) + (yAB * yBC);
+    double norm_AB = dist(xA, yA, xB, yB);
+    double norm_BC = dist(xB, yB, xC, yC);
+
+    return acos(prod_scal/(norm_AB * norm_BC));
+    
+    /*if -1 <= prod_scal/(norm_u * norm_v) <= 1: 
+       
+    else:
+        return round(prod_scal/(norm_u * norm_v) *500)*/
+}
+
+int main()
+{
+    printf("Angle = %lf\n", angle(1, 1, 3, 1, 3, 3));
+    
+    return 0;
+}
+

@@ -2,9 +2,11 @@
 #include <stdlib.h>
 #include <time.h>
 #include <assert.h>
+#include <math.h>
 
 #define PB 1 //Ferme en bas
 #define PD 2 //Ferme a droite
+#define PI acos(-1)
 
 
 typedef struct {
