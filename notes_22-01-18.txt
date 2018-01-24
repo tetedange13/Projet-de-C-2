@@ -1,0 +1,29 @@
+Vecteur U de coord: cos(thêta), sin(thêta)
+
+AO' = DxU de coord: (Dcos, Dsin)
+
+V, orthogonal à U et à AO'
+De coord : (-sin, cos)
+
+(Pk = coord de pixel dans notre plan de laby) 
+O'Pk= kV
+
+Ensuite on passe à P'k (coord de pixels sur notre écran)
+
+On calcule des coordonnées de CHAQUE pixel pour k entre -L/2 et L/2
+
+Par Thalès: h/D = H/d
+Le calcul de h pour tous les pixels de l'écran nous fera apparaître des murs.
+Tracer seulement les 4 points du mur ?
+
+2 tests de collision:
+- un sur les murs horizontaux
+- un sur les murs verticaux
+
+On s'arrête au 1er point d'intersection qui tombe dans une case 
+qui a au moins une porte. Puis Thalès une 2e fois
+
+On regarde la porte dans la case juste avant le point d'impact I
+
+Fixer au seuil sur petit delta, au delà duquel on fait pas le test de collision 
+(parce qu'on est trop proche d'un angle droit, on renvoie -1 par exemple) 
