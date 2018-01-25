@@ -8,6 +8,9 @@
 #define PD 2 //Ferme a droite
 #define PI acos(-1)
 
+#define D 200 //profondeur de champ
+#define L 320 //largeur de champ
+
 
 typedef struct {
     //Coordonnées
@@ -31,6 +34,10 @@ typedef struct {
     int k;
 } tab_nk;
 
+typedef struct {
+    int x;
+    int y;
+} point;
 
 int card_portes(int h, int l);
 
@@ -49,4 +56,14 @@ void del_porte(tab_nk *tab, int i);
 void sort_portes(tab_nk *tab);
 
 void gen_laby(tab_nk *tab, matrice *pm);
+
+double dist(point *a, point *b);
+
+double angle(point *a, point *b, point *c);
+
+void disp_coord(point *pt);
+
+point *coeff_to_pix(point coeff, int marg);
+
+point *pix_to_coeff(point pix, int marg);
 

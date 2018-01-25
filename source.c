@@ -44,7 +44,7 @@ tab_nk *init_tab_ouvr(int h, int l)
     return tab;	    
 }
 
-matrice *init_mat (int largeur, int hauteur)
+matrice *init_mat(int largeur, int hauteur)
 {
     matrice *pm;
     int i, j;
@@ -173,22 +173,23 @@ void gen_laby(tab_nk *tab, matrice *pm)
 	}
 }
 
-double dist(int x1, int y1, int x2, int y2)
+double dist(point *a, point *b)
 { //Calcule la dist euclidienne (en 2D) entre 2 points de coord connues
     
-    return sqrt( (x1-x2)*(x1-x2) + (y1-y2)*(y1-y2) );
+    return sqrt( (a->x - b->x)*(a->x - b->x) +
+                 (a->y - b->y)*(a->y - b->y) );
 }
 
-double angle(int xA, int yA, int xB, int yB, int xC, int yC)
+double angle(point *a, point *b, point *c)
 { //Calcule l'angle ABC (en rad) formé par 3 atomes de coord connues 
 
     //Calcul des coord des 2 vect AB et BC:    
-    int xAB = xA - xB, yAB = yA - yB;
-    int xBC= xC-xB, yBC = yC-yB;
+    int xAB = a->x - b->x, yAB = a->y - b->y;
+    int xBC= c->x - b->x, yBC = c->y - b->y;
     
     double prod_scal = (xAB * xBC) + (yAB * yBC);
-    double norm_AB = dist(xA, yA, xB, yB);
-    double norm_BC = dist(xB, yB, xC, yC);
+    double norm_AB = dist(a, b);
+    double norm_BC = dist(b, c);
 
     return acos(prod_scal/(norm_AB * norm_BC));
     
@@ -198,10 +199,47 @@ double angle(int xA, int yA, int xB, int yB, int xC, int yC)
         return round(prod_scal/(norm_u * norm_v) *500)*/
 }
 
-int main()
+void disp_coord(point *pt) { printf("%d %d\n", pt -> x, pt -> y); }
+
+point *coeff_to_pix(point coeff, int marg)
 {
-    printf("Angle = %lf\n", angle(1, 1, 3, 1, 3, 3));
-    
-    return 0;
+    point * pix = malloc(sizeof(point));
+    pix -> x = coeff.x * marg;
+    pix -> y = coeff.y * marg;
+    return pix;
 }
+
+point *pix_to_coeff(point pix, int marg)
+{
+    point * coeff = malloc(sizeof(point));
+    coeff -> x = pix.x / marg;
+    coeff -> y = pix.y / marg;
+    return coeff;
+}   
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
 
