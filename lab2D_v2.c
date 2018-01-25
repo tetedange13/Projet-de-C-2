@@ -57,9 +57,24 @@ void segmt_from_angle(double theta,
                                  bout->x, bout->y); 
 }
 
+point *coord_pix(int fact, point *ori, double COSINUS, double SINUS, int k)
+{
+    point *Pk = malloc(sizeof(point));
+    Pk->x = fact*COSINUS - k*SINUS + ori->x; 
+    Pk->y = fact*SINUS + k*COSINUS + ori->y;
+    return Pk;
+}
+
+vect *unitaire(point *ori, point *Pk)
+{
+    vect *vect_unit = malloc(sizeof(vect));
+    int norm = dist(ori, Pk);
+    vect_unit->x = (Pk->x - ori->x) / (double)norm; 
+    vect_unit->y = (Pk->y - ori->y) / (double)norm;
+    return vect_unit;
+}
+
 int main(int argc, char *argv[]) {
-    SDL_Window *laby2D = NULL;
-    SDL_Renderer *renderer2D = NULL;
     int width2D = 640, height2D = 640, marg;
     int largeur = 3, hauteur = 3;
     int h = hauteur + 1, l = largeur + 1;
@@ -69,6 +84,9 @@ int main(int argc, char *argv[]) {
     srand(time(NULL));
     gen_laby(tab, pm);
     disp_laby(pm); 
+    
+    SDL_Window *laby2D = NULL;
+    SDL_Renderer *renderer2D = NULL;
     status etat = CONTINUE;
     if (SDL_Init(SDL_INIT_VIDEO) != 0) {
         fprintf(stderr,
@@ -104,7 +122,6 @@ int main(int argc, char *argv[]) {
     SDL_SetRenderDrawColor(renderer2D, 255, 255, 255, 0);
     SDL_RenderClear(renderer2D); //fond blanc
     SDL_SetRenderDrawColor(renderer2D, 0, 0, 0, 255);
-    //SDL_RenderDrawLine(renderer, 0, 0, 320, 240);
     draw_laby(pm, marg, renderer2D);
     
     
@@ -113,13 +130,15 @@ int main(int argc, char *argv[]) {
     point *ori = malloc(sizeof(point)); ori->x = marg+10; ori-> y = marg+10;
     
     int long_U = 20;
-    double theta = PI/4;
+    double theta = PI/12;
     
-    /*double COSINUS = cos(theta);
+    double COSINUS = cos(theta);
     double SINUS = sin(theta);
-    double COSINUS_CONE = cos(atan(L/(2.0*D)));
+    /*double COSINUS_CONE = cos(atan(L/(2.0*D)));
     double SINUS_CONE = sin(atan(L/(2.0*D)));
     double SINUS_a-b = SINUS*/
+    
+
     
     //Tracé de U:                  
     segmt_from_angle(theta, long_U, ori, marg, renderer2D);
@@ -136,6 +155,24 @@ int main(int argc, char *argv[]) {
     
     segmt_from_angle(theta + PI/2, L/2, ori_D, marg, renderer2D);
     segmt_from_angle(theta - PI/2, L/2, ori_D, marg, renderer2D);
+    
+    
+    /*int k;
+    for (k = -L/2; k <= L/2; k++) { 
+        point *Pk = coord_pix(ori, D, COSINUS, SINUS, k);
+    }*/
+    
+    int i, k = -150;
+    point *Pk = coord_pix(D, ori, COSINUS, SINUS, k);
+    vect *vect_unit = unitaire(ori, Pk);
+    SDL_SetRenderDrawColor(renderer2D, 255, 0, 0, 255); //Rouge
+
+    for (i = 0; i <= L/2; i++) {
+        SDL_RenderDrawPoint(renderer2D, (int)(i*vect_unit->x) + ori->x, 
+                                        (int)(i*vect_unit->y) + ori->x);
+    }
+    printf("cos=%lf sin=%lf\n", COSINUS, SINUS);
+    printf("Ori="); disp_coord(ori);
     
     SDL_RenderPresent(renderer2D);
     

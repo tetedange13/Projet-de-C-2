@@ -39,6 +39,11 @@ typedef struct {
     int y;
 } point;
 
+typedef struct {
+    double x;
+    double y;
+} vect;
+
 int card_portes(int h, int l);
 
 void disp_portes(tab_nk *tab);
