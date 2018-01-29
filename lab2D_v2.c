@@ -58,7 +58,8 @@ void segmt_from_angle(double theta,
 }
 
 point *coord_pix(int fact, point *ori, double COSINUS, double SINUS, int k)
-{
+{ //Renvoie les coord du point projete à dist fact orthogonalement de k
+
     point *Pk = malloc(sizeof(point));
     Pk->x = fact*COSINUS - k*SINUS + ori->x; 
     Pk->y = fact*SINUS + k*COSINUS + ori->y;
@@ -74,6 +75,69 @@ vect *unitaire(point *ori, point *Pk)
     return vect_unit;
 }
 
+int dist_mur(int ind, int marg, int c)
+{ //calcul distance point mur
+
+    return ((ind * marg) - c);
+}
+
+short in_laby(point *coeff, int h, int l)
+{
+    if ((coeff->x < h) && (coeff->y < l)) 
+        return 1;
+    return 0;
+}
+
+point *coli_vert(int k, matrice *pm, point *ori, double COSINUS, double SINUS, 
+                  int width, int marg, int h, int l, SDL_Renderer *renderer2D)
+{
+    point *Pk = coord_pix(D, ori, COSINUS, SINUS, k); 
+    vect *vect_unit = unitaire(ori, Pk);
+    point *current_pix = malloc(sizeof(point));
+    current_pix->x = ori->x; current_pix->y = ori->y;
+    point *current_coeff = pix_to_coeff(current_pix, marg);
+    int i = 0;
+    point *preced_coeff = malloc(sizeof(point));
+    while (in_laby(current_coeff, h, l)) {
+        current_pix->x = (int)(i*vect_unit->x) + ori->x;
+        current_pix-> y = (int)(i*vect_unit->y) + ori->y;
+        if ((pm->contenu[current_coeff->x][current_coeff->y] == PD) ||
+           (pm->contenu[current_coeff->x][current_coeff->y] == 3)) {
+            preced_coeff->x = current_coeff->x;
+            preced_coeff->y = current_coeff->y;
+            while ((current_coeff->x == preced_coeff->x) && 
+                  (current_coeff->y == preced_coeff->y)) {
+                current_pix->x = (int)(i*vect_unit->x) + ori->x;
+                current_pix-> y = (int)(i*vect_unit->y) + ori->y;
+                current_coeff = pix_to_coeff(current_pix, marg);
+                i++;
+            }
+            
+            
+            if ((current_coeff->x == preced_coeff->x + 1) &&
+               (preced_coeff->y == current_coeff->y)) {
+               //current_coeff = pix_to_coeff(current_pix, marg);
+               printf("%d\n", pm->contenu[preced_coeff->x][preced_coeff->y]);
+               printf("Preced: "); disp_coord(preced_coeff);
+               disp_coord(current_coeff);
+               
+               return current_pix;
+            } else
+                current_coeff->x = 0; current_coeff->y = 0;
+               
+        }
+        current_coeff = pix_to_coeff(current_pix, marg);
+        i++;
+    }
+    //point *bogue = coord_pix(2*width, ori, COSINUS, SINUS, k);
+    //current_pix->x = 2 * width; current_pix->y = 2 * width;
+    return ori; 
+}
+
+/*
+printf("cos=%lf sin=%lf\n", COSINUS, SINUS);
+    printf("Ori="); disp_coord(ori);*/
+    
 int main(int argc, char *argv[]) {
     int width2D = 640, height2D = 640, marg;
     int largeur = 3, hauteur = 3;
@@ -98,8 +162,8 @@ int main(int argc, char *argv[]) {
     atexit(SDL_Quit);
     laby2D = SDL_CreateWindow
 	 ("Labyrinthe",                 
-	 SDL_WINDOWPOS_CENTERED,     
-	 SDL_WINDOWPOS_CENTERED,     
+	 100,     
+	 100,     
 	 height2D,                         
 	 width2D,                         
 	 0                            
@@ -130,7 +194,7 @@ int main(int argc, char *argv[]) {
     point *ori = malloc(sizeof(point)); ori->x = marg+10; ori-> y = marg+10;
     
     int long_U = 20;
-    double theta = PI/12;
+    double theta = PI/6;
     
     double COSINUS = cos(theta);
     double SINUS = sin(theta);
@@ -157,24 +221,19 @@ int main(int argc, char *argv[]) {
     segmt_from_angle(theta - PI/2, L/2, ori_D, marg, renderer2D);
     
     
-    /*int k;
-    for (k = -L/2; k <= L/2; k++) { 
-        point *Pk = coord_pix(ori, D, COSINUS, SINUS, k);
-    }*/
-    
-    int i, k = -150;
-    point *Pk = coord_pix(D, ori, COSINUS, SINUS, k);
-    vect *vect_unit = unitaire(ori, Pk);
+    int k;
     SDL_SetRenderDrawColor(renderer2D, 255, 0, 0, 255); //Rouge
-
-    for (i = 0; i <= L/2; i++) {
-        SDL_RenderDrawPoint(renderer2D, (int)(i*vect_unit->x) + ori->x, 
-                                        (int)(i*vect_unit->y) + ori->x);
+    for (k = -L/2; k <= L/2; k+=20) { 
+        point *I = coli_vert(k, pm, ori, COSINUS, SINUS, width2D, marg, h, l,
+                             renderer2D);     
+        SDL_RenderDrawLine(renderer2D, ori->x, ori->y, I->x, I->y);
     }
-    printf("cos=%lf sin=%lf\n", COSINUS, SINUS);
-    printf("Ori="); disp_coord(ori);
-    
+    //SDL_SetRenderDrawColor(renderer2D, 0, 0, 0, 255); //Noir
+    //draw_laby(pm, marg, renderer2D);         
     SDL_RenderPresent(renderer2D);
+    
+    
+    
     
     
     
@@ -182,7 +241,7 @@ int main(int argc, char *argv[]) {
     
     SDL_Window *laby3D = NULL;
     SDL_Renderer *renderer3D = NULL;
-    int width3D = 640, height3D = 640;
+    int width3D = 360, height3D = 640;
 
     if (SDL_Init(SDL_INIT_VIDEO) != 0) {
         fprintf(stderr,
@@ -194,8 +253,8 @@ int main(int argc, char *argv[]) {
     atexit(SDL_Quit);
     laby3D = SDL_CreateWindow
 	 ("Vue 3D",                 
-	 SDL_WINDOWPOS_CENTERED,     
-	 SDL_WINDOWPOS_CENTERED,     
+	 800,     
+	 100,     
 	 height3D,                         
 	 width3D,                         
 	 0                            
@@ -222,8 +281,8 @@ int main(int argc, char *argv[]) {
     //FONCTIONS:
     
     
-    
-    
+    SDL_SetRenderDrawColor(renderer3D, 0, 0, 0, 255);
+    SDL_RenderDrawLine(renderer3D, 0, 180, 640, 180);
     SDL_RenderPresent(renderer3D);
     
     do {
@@ -240,7 +299,6 @@ int main(int argc, char *argv[]) {
     SDL_DestroyRenderer(renderer2D);
     SDL_DestroyRenderer(renderer3D);
     SDL_DestroyWindow(laby2D);
-    SDL_DestroyWindow(laby3D);
-    
+    SDL_DestroyWindow(laby3D);    
     return 0;
 }

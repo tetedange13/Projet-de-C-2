@@ -15,3 +15,5 @@ void draw_U (double theta, point *ori, int marg, SDL_Renderer *renderer);
 point *coord_pix(int fact, point *ori, double COSINUS, double SINUS, int k);
 
 vect *unitaire(point *ori, point *Pk);
+
+int dist_mur(int ind, int marg, int c);

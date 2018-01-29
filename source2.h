@@ -68,7 +68,7 @@ double angle(point *a, point *b, point *c);
 
 void disp_coord(point *pt);
 
-point *coeff_to_pix(point coeff, int marg);
+point *coeff_to_pix(point *coeff, int marg);
 
-point *pix_to_coeff(point pix, int marg);
+point *pix_to_coeff(point *pix, int marg);
 
