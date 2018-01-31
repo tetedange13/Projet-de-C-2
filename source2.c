@@ -204,16 +204,16 @@ void disp_coord(point *pt) { printf("%d %d\n", pt -> x, pt -> y); }
 point *coeff_to_pix(point *coeff, int marg)
 {
     point *pix = malloc(sizeof(point));
-    pix -> x = coeff->x * marg;
-    pix -> y = coeff->y * marg;
+    pix -> x = coeff -> x * marg;
+    pix -> y = coeff -> y * marg;
     return pix;
 }
 
 point *pix_to_coeff(point *pix, int marg)
 {
     point *coeff = malloc(sizeof(point));
-    coeff -> x = pix->x / marg;
-    coeff -> y = pix->y / marg;
+    coeff -> x = pix -> x / marg;
+    coeff -> y = pix -> y / marg;
     return coeff;
 }   
     
