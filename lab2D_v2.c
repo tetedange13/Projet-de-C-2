@@ -106,7 +106,8 @@ point *cast_vertical(matrice *pm, point *coord, point *pix, int scale,
 	for(int j = j_start; j != j_lim; j += incr) {
 	    GAMMA = j * scale - coord -> x;
 	    DELTA = GAMMA * delta / gamma;
-        if (DELTA + coord -> y < 0)
+        if ( (DELTA + coord -> y < 0) || 
+           ((int) ((coord -> y + DELTA) / scale) > (pm -> hauteur - 1)) ) 
             return NULL; //Si le point projete est HORS de l'aire graphique, on arrete  
         //printf("salut %lf %d\n", DELTA, coord -> y);
         //printf("Coord= %lf %lf\n", GAMMA + coord -> x, DELTA + coord -> y);
