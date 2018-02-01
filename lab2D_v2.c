@@ -279,6 +279,10 @@ int main(int argc, char *argv[]) {
                 printf("Exit.\n"); 
                 etat = QUIT;
                 break;
+		case SDL_KEYDOWN:
+                printf("Exit.\n"); 
+                etat = QUIT;
+                break;
             }
         }
     } while (etat != QUIT);
