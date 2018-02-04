@@ -130,6 +130,56 @@ point *cast_vertical(matrice *pm, point *coord, point *pix, int scale,
 	return NULL;
 }
 
+point *cast_horizontal(matrice *pm, point *coord, point *pix, int scale, 
+                     SDL_Renderer *renderer)
+{
+    int j_pix = pix -> x / scale;
+    int gamma = pix -> x - coord -> x;
+    int delta = pix -> y - coord -> y;
+    int j_lim, incr, j_start;
+    double GAMMA, DELTA;
+    // TO DO : gerer le cas d'un mur vertical vu de profil.
+    //(position obs multiple de scale et theta multiple de PI/2)
+    if (gamma == 0)
+        return NULL;
+    if (gamma > 0) {
+	    j_start = j_pix + 1;
+	    j_lim = pm -> largeur + 1;
+	    incr = 1;
+    } else {
+	    j_start = j_pix;
+	    j_lim = 0;
+	    incr = -1;
+	}
+    SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);//Rouge
+	for(int j = j_start; j != j_lim; j += incr) {
+	    DELTA = j * scale - coord -> y;
+	    GAMMA  =  delta / (gamma*DELTA);
+        if ( (DELTA + coord -> y < 0) || 
+           ((int) ((coord -> y + DELTA) / scale) > (pm -> hauteur - 1)) ) 
+            return NULL; //Si le point projete est HORS de l'aire graphique, on arrete  
+        //printf("salut %lf %d\n", DELTA, coord -> y);
+        //printf("Coord= %lf %lf\n", GAMMA + coord -> x, DELTA + coord -> y);
+        //if (( (int)((coord -> y + DELTA) / scale) >= 0) &&
+        //(pm->contenu[(int) ((coord -> y + DELTA) / scale)][j - 1] & PD)) {
+        if (pm->contenu[(int) ((coord -> y + GAMMA) / scale)][j - 1] & PB) {    
+            point *I = malloc(sizeof(point));
+            I -> x = GAMMA + coord -> x;
+            I -> y = DELTA + coord -> y;
+	        draw_croix(renderer, I -> x, I -> y);
+            return I;
+        }
+        //if (coord -> y > DELTA) {
+        /*if ( coord -> y + DELTA <= -scale ) {
+            printf("pas bon %lf %lf %lf %d %d\n", DELTA + coord -> y, DELTA, GAMMA, gamma, delta);
+            draw_croix(renderer, GAMMA + coord -> x, DELTA + coord -> y);
+            draw_segment(renderer, coord, pix);
+        }*/
+    }
+	return NULL;
+}
+
+
 int main(int argc, char *argv[]) {
     int width2D = 640, height2D = 640, scale;
     int largeur = 5, hauteur = 5;
@@ -208,7 +258,7 @@ int main(int argc, char *argv[]) {
 
     int k;
     for (k = -L/2; k < L/2; k += 1) {
-        printf("k=%d\n", k);
+        //printf("k=%d\n", k);
         point *pix = coord_pix(D, obs, k);
         point *I = cast_vertical(pm, coord, pix, scale, renderer2D);
         if(I != NULL){
