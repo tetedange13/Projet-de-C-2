@@ -226,75 +226,8 @@ int main(int argc, char *argv[]) {
     }
     SDL_SetRenderDrawColor(renderer2D, 255, 255, 255, 0);
     SDL_RenderClear(renderer2D); //fond blanc
-    SDL_SetRenderDrawColor(renderer2D, 0, 0, 0, 255);
-    draw_laby(pm, scale, renderer2D);
-    
-    
-    
-    //TEST:
-    point *coord = malloc(sizeof(point));
-    coord -> x = 3.5*scale;
-    coord -> y = 3.5*scale;
-    double theta = PI/4;
-    
-    observer *obs = malloc(sizeof(observer));
-    obs -> coord = coord;
-    obs -> sinus = sin(theta);
-    obs -> cosinus = cos(theta);
 
-    /*int k;
-    for (k = -L/2; k < L/2; k += 1) {
-        point *pix = coord_pix(D, obs, k);
-        point *I = cast_horizontal(pm, coord, pix, scale, renderer2D);
-        if(I != NULL){
-            draw_segment(renderer2D, coord, I); 
-            free(I);
-        }
-        free(pix); 
-    }
-    SDL_SetRenderDrawColor(renderer2D, 0, 0, 255, 255);//Bleu
-    SDL_RenderPresent(renderer2D);*/
-    
-    int k;
-    for (k = -L/2; k < L/2; k += 1) {
-        //printf("k=%d\n", k);
-        point *pix = coord_pix(D, obs, k);
-        point *I_vert = cast_vertical(pm, coord, pix, scale, renderer2D);
-        point *I_horiz = cast_horizontal(pm, coord, pix, scale, renderer2D);
-        point *I;
-        if ((I_vert != NULL) && (I_horiz != NULL)) {
-            printf("bonjour\n");
-            I = plus_proche(coord, I_vert, I_horiz);
-        } else if (I_horiz == NULL) {
-            printf("salut\n");
-            I = I_vert;
-            free(I_horiz);
-        } else if (I_vert == NULL) {
-            printf("coucou\n");
-            I = I_horiz;
-            free(I_vert);
-        }            
-        if(I != NULL){
-            draw_segment(renderer2D, coord, I); 
-            free(I);
-        }
-        free(pix); 
-    }
-    SDL_SetRenderDrawColor(renderer2D, 0, 0, 0, 255);
-    draw_laby(pm, scale, renderer2D);
-    point *orig_ecran = coord_pix(D, obs, 0);
-    point *bord_g = coord_pix(D, obs, L/2);
-    point *bord_d = coord_pix(D, obs, -L/2);
-    SDL_SetRenderDrawColor(renderer2D, 0, 255, 0, 255);//Vert
-    draw_segment(renderer2D, obs -> coord, coord_pix(D, obs, 0));
-    draw_segment(renderer2D, obs -> coord, bord_g);
-    draw_segment(renderer2D, obs -> coord, bord_d);
-    SDL_SetRenderDrawColor(renderer2D, 0, 0, 255, 255);//Bleu
-    draw_segment(renderer2D, orig_ecran, bord_g);
-    SDL_SetRenderDrawColor(renderer2D, 0, 0, 255, 255);//Bleu
-    draw_segment(renderer2D, orig_ecran, bord_d);
-    
-    SDL_RenderPresent(renderer2D);
+
        
     
     
@@ -337,16 +270,67 @@ int main(int argc, char *argv[]) {
 		);
         exit(1);
     }
-    
     SDL_SetRenderDrawColor(renderer3D, 255, 255, 255, 0);
     SDL_RenderClear(renderer3D); //fond blanc    
     
-    //FONCTIONS:
+    point *coord = malloc(sizeof(point));
+    coord -> x = 3.5*scale;
+    coord -> y = 3.5*scale;
+    double theta = PI/4;
     
+    observer *obs = malloc(sizeof(observer));
+    obs -> coord = coord;
+    obs -> sinus = sin(theta);
+    obs -> cosinus = cos(theta);
     
+    point *middle = malloc(sizeof(point));
+    middle -> x = 180;
+    middle -> y = 320;
     SDL_SetRenderDrawColor(renderer3D, 0, 0, 0, 255);
-    SDL_RenderDrawLine(renderer3D, 0, 180, 640, 180);
+    
+    int k;
+    for (k = -L/2; k < L/2; k += 1) {
+        //printf("k=%d\n", k);
+        point *pix = coord_pix(D, obs, k);
+        point *I_vert = cast_vertical(pm, coord, pix, scale, renderer2D);
+        point *I_horiz = cast_horizontal(pm, coord, pix, scale, renderer2D);
+        point *I;
+        if ((I_vert != NULL) && (I_horiz != NULL)) {
+            I = plus_proche(coord, I_vert, I_horiz);
+        } else if (I_horiz == NULL) {
+            I = I_vert;
+            free(I_horiz);
+        } else if (I_vert == NULL) {
+            I = I_horiz;
+            free(I_vert);
+        }            
+        if(I != NULL){
+            draw_segment(renderer2D, coord, I);
+            int h = height3D * D / dist(coord, I);
+            SDL_RenderDrawLine(renderer3D, middle -> x + k, middle -> y - h / 2, 
+                                           middle -> x + k, middle -> y + h / 2);
+            free(I);
+        }
+        free(pix); 
+    }
+    SDL_SetRenderDrawColor(renderer2D, 0, 0, 0, 255);
+    draw_laby(pm, scale, renderer2D);
+    point *orig_ecran = coord_pix(D, obs, 0);
+    point *bord_g = coord_pix(D, obs, L/2);
+    point *bord_d = coord_pix(D, obs, -L/2);
+    SDL_SetRenderDrawColor(renderer2D, 0, 255, 0, 255);//Vert
+    draw_segment(renderer2D, obs -> coord, coord_pix(D, obs, 0));
+    draw_segment(renderer2D, obs -> coord, bord_g);
+    draw_segment(renderer2D, obs -> coord, bord_d);
+    SDL_SetRenderDrawColor(renderer2D, 0, 0, 255, 255);//Bleu
+    draw_segment(renderer2D, orig_ecran, bord_g);
+    SDL_SetRenderDrawColor(renderer2D, 0, 0, 255, 255);//Bleu
+    draw_segment(renderer2D, orig_ecran, bord_d);
+    
+    SDL_RenderPresent(renderer2D);
     SDL_RenderPresent(renderer3D);
+    
+    
     
     do {
         SDL_Event e;
