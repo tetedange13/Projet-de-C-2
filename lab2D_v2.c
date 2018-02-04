@@ -107,25 +107,15 @@ point *cast_vertical(matrice *pm, point *coord, point *pix, int scale,
 	    GAMMA = j * scale - coord -> x;
 	    DELTA = GAMMA * delta / gamma;
         if ( (DELTA + coord -> y < 0) || 
-           ((int) ((coord -> y + DELTA) / scale) > (pm -> hauteur - 1)) ) 
+           ((int) ((DELTA + coord -> y) / scale) > (pm -> hauteur - 1)) ) 
             return NULL; //Si le point projete est HORS de l'aire graphique, on arrete  
-        //printf("salut %lf %d\n", DELTA, coord -> y);
-        //printf("Coord= %lf %lf\n", GAMMA + coord -> x, DELTA + coord -> y);
-        //if (( (int)((coord -> y + DELTA) / scale) >= 0) &&
-        //(pm->contenu[(int) ((coord -> y + DELTA) / scale)][j - 1] & PD)) {
-        if (pm->contenu[(int) ((coord -> y + DELTA) / scale)][j - 1] & PD) {    
+        if (pm->contenu[(int) ((DELTA + coord -> y) / scale)][j - 1] & PD) {    
             point *I = malloc(sizeof(point));
             I -> x = GAMMA + coord -> x;
             I -> y = DELTA + coord -> y;
-	        draw_croix(renderer, I -> x, I -> y);
+	        //draw_croix(renderer, I -> x, I -> y);
             return I;
         }
-        //if (coord -> y > DELTA) {
-        /*if ( coord -> y + DELTA <= -scale ) {
-            printf("pas bon %lf %lf %lf %d %d\n", DELTA + coord -> y, DELTA, GAMMA, gamma, delta);
-            draw_croix(renderer, GAMMA + coord -> x, DELTA + coord -> y);
-            draw_segment(renderer, coord, pix);
-        }*/
     }
 	return NULL;
 }
@@ -133,52 +123,61 @@ point *cast_vertical(matrice *pm, point *coord, point *pix, int scale,
 point *cast_horizontal(matrice *pm, point *coord, point *pix, int scale, 
                      SDL_Renderer *renderer)
 {
-    int j_pix = pix -> x / scale;
-    int gamma = pix -> x - coord -> x;
-    int delta = pix -> y - coord -> y;
-    int j_lim, incr, j_start;
+    int i_pix = pix -> y / scale;
+    int gamma = pix -> y - coord -> y;
+    int delta = pix -> x - coord -> x;
+    int i_lim, incr, i_start;
     double GAMMA, DELTA;
     // TO DO : gerer le cas d'un mur vertical vu de profil.
     //(position obs multiple de scale et theta multiple de PI/2)
     if (gamma == 0)
         return NULL;
     if (gamma > 0) {
-	    j_start = j_pix + 1;
-	    j_lim = pm -> largeur + 1;
+	    i_start = i_pix + 1;
+	    i_lim = pm -> hauteur + 1;
 	    incr = 1;
     } else {
-	    j_start = j_pix;
-	    j_lim = 0;
+	    i_start = i_pix;
+	    i_lim = 0;
 	    incr = -1;
 	}
     SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);//Rouge
-	for(int j = j_start; j != j_lim; j += incr) {
-	    DELTA = j * scale - coord -> y;
-	    GAMMA  =  delta / (gamma*DELTA);
-        if ( (DELTA + coord -> y < 0) || 
-           ((int) ((coord -> y + DELTA) / scale) > (pm -> hauteur - 1)) ) 
+	for(int i = i_start; i != i_lim; i += incr) {
+	    GAMMA = i * scale - coord -> y;
+	    DELTA = GAMMA * delta / gamma;
+        if ( (DELTA + coord -> x < 0) || 
+           ((int) ((DELTA + coord -> x) / scale) > (pm -> largeur - 1)) ) 
             return NULL; //Si le point projete est HORS de l'aire graphique, on arrete  
         //printf("salut %lf %d\n", DELTA, coord -> y);
         //printf("Coord= %lf %lf\n", GAMMA + coord -> x, DELTA + coord -> y);
         //if (( (int)((coord -> y + DELTA) / scale) >= 0) &&
         //(pm->contenu[(int) ((coord -> y + DELTA) / scale)][j - 1] & PD)) {
-        if (pm->contenu[(int) ((coord -> y + GAMMA) / scale)][j - 1] & PB) {    
+        if (pm->contenu[i - 1][(int) ((DELTA + coord -> x) / scale)] & PB) {    
             point *I = malloc(sizeof(point));
-            I -> x = GAMMA + coord -> x;
-            I -> y = DELTA + coord -> y;
-	        draw_croix(renderer, I -> x, I -> y);
+            I -> x = DELTA + coord -> x;
+            I -> y = GAMMA + coord -> y;
+	        //draw_croix(renderer, I -> x, I -> y);
             return I;
         }
         //if (coord -> y > DELTA) {
         /*if ( coord -> y + DELTA <= -scale ) {
             printf("pas bon %lf %lf %lf %d %d\n", DELTA + coord -> y, DELTA, GAMMA, gamma, delta);
-            draw_croix(renderer, GAMMA + coord -> x, DELTA + coord -> y);
+            draw_croix(renderer, DELTA + coord -> x, GAMMA + coord -> y);
             draw_segment(renderer, coord, pix);
         }*/
     }
 	return NULL;
 }
 
+point *plus_proche(point *coord, point *I_vert, point *I_horiz)
+{ //Détermine quel point est le plus proche de l'ori
+    int dist_vert = dist(coord, I_vert);
+    int dist_horiz = dist(coord, I_horiz);
+    if (dist_vert < dist_horiz)
+        return I_vert;
+    else
+        return I_horiz;
+}
 
 int main(int argc, char *argv[]) {
     int width2D = 640, height2D = 640, scale;
@@ -234,33 +233,19 @@ int main(int argc, char *argv[]) {
     
     //TEST:
     point *coord = malloc(sizeof(point));
-    coord -> x = 2*scale;
-    coord -> y = 3*scale;
-    double theta = 5*PI/6;
-    //double theta = -PI/2;
+    coord -> x = 3.5*scale;
+    coord -> y = 3.5*scale;
+    double theta = PI/4;
     
     observer *obs = malloc(sizeof(observer));
     obs -> coord = coord;
     obs -> sinus = sin(theta);
     obs -> cosinus = cos(theta);
-    
-    point *orig_ecran = coord_pix(D, obs, 0);
-    point *bord_g = coord_pix(D, obs, L/2);
-    point *bord_d = coord_pix(D, obs, -L/2);
-    SDL_SetRenderDrawColor(renderer2D, 0, 255, 0, 255);//Vert
-    draw_segment(renderer2D, obs -> coord, coord_pix(D, obs, 0));
-    draw_segment(renderer2D, obs -> coord, bord_g);
-    draw_segment(renderer2D, obs -> coord, bord_d);
-    SDL_SetRenderDrawColor(renderer2D, 255, 0, 0, 255);//Rouge
-    draw_segment(renderer2D, orig_ecran, bord_g);
-    SDL_SetRenderDrawColor(renderer2D, 0, 0, 255, 255);//Bleu
-    draw_segment(renderer2D, orig_ecran, bord_d);
 
-    int k;
+    /*int k;
     for (k = -L/2; k < L/2; k += 1) {
-        //printf("k=%d\n", k);
         point *pix = coord_pix(D, obs, k);
-        point *I = cast_vertical(pm, coord, pix, scale, renderer2D);
+        point *I = cast_horizontal(pm, coord, pix, scale, renderer2D);
         if(I != NULL){
             draw_segment(renderer2D, coord, I); 
             free(I);
@@ -268,6 +253,47 @@ int main(int argc, char *argv[]) {
         free(pix); 
     }
     SDL_SetRenderDrawColor(renderer2D, 0, 0, 255, 255);//Bleu
+    SDL_RenderPresent(renderer2D);*/
+    
+    int k;
+    for (k = -L/2; k < L/2; k += 1) {
+        //printf("k=%d\n", k);
+        point *pix = coord_pix(D, obs, k);
+        point *I_vert = cast_vertical(pm, coord, pix, scale, renderer2D);
+        point *I_horiz = cast_horizontal(pm, coord, pix, scale, renderer2D);
+        point *I;
+        if ((I_vert != NULL) && (I_horiz != NULL)) {
+            printf("bonjour\n");
+            I = plus_proche(coord, I_vert, I_horiz);
+        } else if (I_horiz == NULL) {
+            printf("salut\n");
+            I = I_vert;
+            free(I_horiz);
+        } else if (I_vert == NULL) {
+            printf("coucou\n");
+            I = I_horiz;
+            free(I_vert);
+        }            
+        if(I != NULL){
+            draw_segment(renderer2D, coord, I); 
+            free(I);
+        }
+        free(pix); 
+    }
+    SDL_SetRenderDrawColor(renderer2D, 0, 0, 0, 255);
+    draw_laby(pm, scale, renderer2D);
+    point *orig_ecran = coord_pix(D, obs, 0);
+    point *bord_g = coord_pix(D, obs, L/2);
+    point *bord_d = coord_pix(D, obs, -L/2);
+    SDL_SetRenderDrawColor(renderer2D, 0, 255, 0, 255);//Vert
+    draw_segment(renderer2D, obs -> coord, coord_pix(D, obs, 0));
+    draw_segment(renderer2D, obs -> coord, bord_g);
+    draw_segment(renderer2D, obs -> coord, bord_d);
+    SDL_SetRenderDrawColor(renderer2D, 0, 0, 255, 255);//Bleu
+    draw_segment(renderer2D, orig_ecran, bord_g);
+    SDL_SetRenderDrawColor(renderer2D, 0, 0, 255, 255);//Bleu
+    draw_segment(renderer2D, orig_ecran, bord_d);
+    
     SDL_RenderPresent(renderer2D);
        
     
