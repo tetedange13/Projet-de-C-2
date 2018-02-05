@@ -107,8 +107,9 @@ point *cast_vertical(matrice *pm, point *coord, point *pix, int scale,
 	    GAMMA = j * scale - coord -> x;
 	    DELTA = GAMMA * delta / gamma;
         if ( (DELTA + coord -> y < 0) || 
-           ((int) ((DELTA + coord -> y) / scale) > (pm -> hauteur - 1)) ) 
-            return NULL; //Si le point projete est HORS de l'aire graphique, on arrete  
+           ((int) ((DELTA + coord -> y) / scale) > (pm -> hauteur - 1)) )
+           //Si le point projete est HORS de l'aire graphique, on arrete  
+            return NULL; 
         if (pm->contenu[(int) ((DELTA + coord -> y) / scale)][j - 1] & PD) {    
             point *I = malloc(sizeof(point));
             I -> x = GAMMA + coord -> x;
@@ -146,12 +147,9 @@ point *cast_horizontal(matrice *pm, point *coord, point *pix, int scale,
 	    GAMMA = i * scale - coord -> y;
 	    DELTA = GAMMA * delta / gamma;
         if ( (DELTA + coord -> x < 0) || 
-           ((int) ((DELTA + coord -> x) / scale) > (pm -> largeur - 1)) ) 
-            return NULL; //Si le point projete est HORS de l'aire graphique, on arrete  
-        //printf("salut %lf %d\n", DELTA, coord -> y);
-        //printf("Coord= %lf %lf\n", GAMMA + coord -> x, DELTA + coord -> y);
-        //if (( (int)((coord -> y + DELTA) / scale) >= 0) &&
-        //(pm->contenu[(int) ((coord -> y + DELTA) / scale)][j - 1] & PD)) {
+           ((int) ((DELTA + coord -> x) / scale) > (pm -> largeur - 1)) )
+           //Si le point projete est HORS de l'aire graphique, on arrete 
+            return NULL; 
         if (pm->contenu[i - 1][(int) ((DELTA + coord -> x) / scale)] & PB) {    
             point *I = malloc(sizeof(point));
             I -> x = DELTA + coord -> x;
@@ -159,12 +157,6 @@ point *cast_horizontal(matrice *pm, point *coord, point *pix, int scale,
 	        //draw_croix(renderer, I -> x, I -> y);
             return I;
         }
-        //if (coord -> y > DELTA) {
-        /*if ( coord -> y + DELTA <= -scale ) {
-            printf("pas bon %lf %lf %lf %d %d\n", DELTA + coord -> y, DELTA, GAMMA, gamma, delta);
-            draw_croix(renderer, DELTA + coord -> x, GAMMA + coord -> y);
-            draw_segment(renderer, coord, pix);
-        }*/
     }
 	return NULL;
 }
@@ -177,6 +169,42 @@ point *plus_proche(point *coord, point *I_vert, point *I_horiz)
         return I_vert;
     else
         return I_horiz;
+}
+
+void ray_cast (matrice *pm, observer *obs, SDL_Renderer *renderer2D, 
+               SDL_Renderer *renderer3D, int scale, 
+               int width3D, int height3D, point *middle)
+{
+    int k;
+    for (k = -L/2; k < L/2; k++) {
+        //printf("k=%d\n", k);
+        point *pix = coord_pix(D, obs, k);
+        point *I_vert = cast_vertical(pm, obs -> coord, pix, scale, renderer2D);
+        point *I_horiz = cast_horizontal(pm, obs -> coord, pix, scale, renderer2D);
+        point *I;
+        if ((I_vert != NULL) && (I_horiz != NULL)) {
+            I = plus_proche(obs -> coord, I_vert, I_horiz);
+        } else if (I_horiz == NULL) {
+            I = I_vert;
+            free(I_horiz);
+        } else if (I_vert == NULL) {
+            I = I_horiz;
+            free(I_vert);
+        }            
+        if(I != NULL){
+            draw_segment(renderer2D, obs -> coord, I);
+            double h = height3D * D / dist(obs -> coord, I);
+            int pas = width3D / L;
+            //int pas = 2;
+            SDL_RenderDrawLine(renderer3D, middle -> x + pas * k, 
+                                           middle -> y - (int) (h / 2),
+                                           middle -> x + pas * k, 
+                                           middle -> y + (int) (h / 2));
+            //middle -> x += 8;
+            free(I);
+        }
+        free(pix); 
+    }
 }
 
 int main(int argc, char *argv[]) {
@@ -237,7 +265,7 @@ int main(int argc, char *argv[]) {
     
     SDL_Window *laby3D = NULL;
     SDL_Renderer *renderer3D = NULL;
-    int width3D = 360, height3D = 640;
+    int width3D = 640, height3D = 320;
 
     if (SDL_Init(SDL_INIT_VIDEO) != 0) {
         fprintf(stderr,
@@ -251,8 +279,8 @@ int main(int argc, char *argv[]) {
 	("Vue 3D",                 
 	 800,     
 	 100,     
+	 width3D,
 	 height3D,                         
-	 width3D,                         
 	 0                            
 	 );
     if (laby3D == NULL) {
@@ -284,37 +312,14 @@ int main(int argc, char *argv[]) {
     obs -> cosinus = cos(theta);
     
     point *middle = malloc(sizeof(point));
-    middle -> x = 0;
-    middle -> y = 180;
-    SDL_SetRenderDrawColor(renderer3D, 0, 0, 0, 255);
+    middle -> x = width3D / 2;
+    middle -> y = height3D / 2;
     
-    int k;
-    for (k = -L/2; k < L/2; k++) {
-        //printf("k=%d\n", k);
-        point *pix = coord_pix(D, obs, k);
-        point *I_vert = cast_vertical(pm, coord, pix, scale, renderer2D);
-        point *I_horiz = cast_horizontal(pm, coord, pix, scale, renderer2D);
-        point *I;
-        if ((I_vert != NULL) && (I_horiz != NULL)) {
-            I = plus_proche(coord, I_vert, I_horiz);
-        } else if (I_horiz == NULL) {
-            I = I_vert;
-            free(I_horiz);
-        } else if (I_vert == NULL) {
-            I = I_horiz;
-            free(I_vert);
-        }            
-        if(I != NULL){
-            draw_segment(renderer2D, coord, I);
-            double h = (double)(height3D * D / dist(coord, I));
-            SDL_RenderDrawLine(renderer3D, middle -> x, middle -> y - h / 2, 
-                                           middle -> x, middle -> y + h / 2);
-            middle -> x+=16;
-            free(I);
-        }
-        free(pix); 
-    }
-    printf("%d\n", k);
+    
+    //RAY CASTING:
+    SDL_SetRenderDrawColor(renderer3D, 0, 0, 0, 255);
+    ray_cast(pm, obs, renderer2D, renderer3D, scale, width3D, height3D, middle); 
+
     SDL_SetRenderDrawColor(renderer2D, 0, 0, 0, 255);
     draw_laby(pm, scale, renderer2D);
     point *orig_ecran = coord_pix(D, obs, 0);
