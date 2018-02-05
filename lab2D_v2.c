@@ -274,8 +274,8 @@ int main(int argc, char *argv[]) {
     SDL_RenderClear(renderer3D); //fond blanc    
     
     point *coord = malloc(sizeof(point));
-    coord -> x = 3.5*scale;
-    coord -> y = 3.5*scale;
+    coord -> x = scale+10;
+    coord -> y = scale+10;
     double theta = PI/4;
     
     observer *obs = malloc(sizeof(observer));
@@ -284,12 +284,12 @@ int main(int argc, char *argv[]) {
     obs -> cosinus = cos(theta);
     
     point *middle = malloc(sizeof(point));
-    middle -> x = 180;
-    middle -> y = 320;
+    middle -> x = 0;
+    middle -> y = 180;
     SDL_SetRenderDrawColor(renderer3D, 0, 0, 0, 255);
     
     int k;
-    for (k = -L/2; k < L/2; k += 1) {
+    for (k = -L/2; k < L/2; k++) {
         //printf("k=%d\n", k);
         point *pix = coord_pix(D, obs, k);
         point *I_vert = cast_vertical(pm, coord, pix, scale, renderer2D);
@@ -306,13 +306,15 @@ int main(int argc, char *argv[]) {
         }            
         if(I != NULL){
             draw_segment(renderer2D, coord, I);
-            int h = height3D * D / dist(coord, I);
-            SDL_RenderDrawLine(renderer3D, middle -> x + k, middle -> y - h / 2, 
-                                           middle -> x + k, middle -> y + h / 2);
+            double h = (double)(height3D * D / dist(coord, I));
+            SDL_RenderDrawLine(renderer3D, middle -> x, middle -> y - h / 2, 
+                                           middle -> x, middle -> y + h / 2);
+            middle -> x+=16;
             free(I);
         }
         free(pix); 
     }
+    printf("%d\n", k);
     SDL_SetRenderDrawColor(renderer2D, 0, 0, 0, 255);
     draw_laby(pm, scale, renderer2D);
     point *orig_ecran = coord_pix(D, obs, 0);

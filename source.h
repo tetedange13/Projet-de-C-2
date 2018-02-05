@@ -8,8 +8,8 @@
 #define PD 2 //Ferme a droite
 #define PI acos(-1)
 
-#define D 200 //profondeur de champ
-#define L 320 //largeur de champ
+#define D 40 //profondeur de champ
+#define L 75 //largeur de champ
 
 
 typedef struct {
