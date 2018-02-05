@@ -81,8 +81,7 @@ void draw_croix(SDL_Renderer *renderer, int x, int y)
     SDL_RenderDrawLine(renderer, x - 2, y, x + 2, y);
 }
 
-point *cast_vertical(matrice *pm, point *coord, point *pix, int scale, 
-                     SDL_Renderer *renderer)
+point *cast_vertical(matrice *pm, point *coord, point *pix, int scale)
 {
     int j_pix = pix -> x / scale;
     int gamma = pix -> x - coord -> x;
@@ -102,7 +101,6 @@ point *cast_vertical(matrice *pm, point *coord, point *pix, int scale,
 	    j_lim = 0;
 	    incr = -1;
 	}
-    SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);//Rouge
 	for(int j = j_start; j != j_lim; j += incr) {
 	    GAMMA = j * scale - coord -> x;
 	    DELTA = GAMMA * delta / gamma;
@@ -114,15 +112,13 @@ point *cast_vertical(matrice *pm, point *coord, point *pix, int scale,
             point *I = malloc(sizeof(point));
             I -> x = GAMMA + coord -> x;
             I -> y = DELTA + coord -> y;
-	        //draw_croix(renderer, I -> x, I -> y);
             return I;
         }
     }
 	return NULL;
 }
 
-point *cast_horizontal(matrice *pm, point *coord, point *pix, int scale, 
-                     SDL_Renderer *renderer)
+point *cast_horizontal(matrice *pm, point *coord, point *pix, int scale)
 {
     int i_pix = pix -> y / scale;
     int gamma = pix -> y - coord -> y;
@@ -142,7 +138,6 @@ point *cast_horizontal(matrice *pm, point *coord, point *pix, int scale,
 	    i_lim = 0;
 	    incr = -1;
 	}
-    SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);//Rouge
 	for(int i = i_start; i != i_lim; i += incr) {
 	    GAMMA = i * scale - coord -> y;
 	    DELTA = GAMMA * delta / gamma;
@@ -154,7 +149,6 @@ point *cast_horizontal(matrice *pm, point *coord, point *pix, int scale,
             point *I = malloc(sizeof(point));
             I -> x = DELTA + coord -> x;
             I -> y = GAMMA + coord -> y;
-	        //draw_croix(renderer, I -> x, I -> y);
             return I;
         }
     }
@@ -171,18 +165,114 @@ point *plus_proche(point *coord, point *I_vert, point *I_horiz)
         return I_horiz;
 }
 
-void ray_cast (matrice *pm, observer *obs, SDL_Renderer *renderer2D, 
+void ray_cast(matrice *pm, observer *obs, SDL_Renderer *renderer2D, 
                SDL_Renderer *renderer3D, int scale, 
                int width3D, int height3D, point *middle)
 {
+    SDL_SetRenderDrawColor(renderer2D, 255, 0, 0, 255);//Rouge
     int k;
     for (k = -L/2; k < L/2; k++) {
         //printf("k=%d\n", k);
         point *pix = coord_pix(D, obs, k);
-        point *I_vert = cast_vertical(pm, obs -> coord, pix, scale, renderer2D);
-        point *I_horiz = cast_horizontal(pm, obs -> coord, pix, scale, renderer2D);
+        point *I_vert = cast_vertical(pm, obs -> coord, pix, scale);
+        point *I_horiz = cast_horizontal(pm, obs -> coord, pix, scale);
         point *I;
+        if ((I_vert != NULL) && (I_horiz != NULL))
+            I = plus_proche(obs -> coord, I_vert, I_horiz);
+        else if (I_horiz == NULL) {
+            I = I_vert;
+            free(I_horiz);
+        } else if (I_vert == NULL) {
+            I = I_horiz;
+            free(I_vert);
+        }            
+        if(I != NULL){
+            
+            draw_segment(renderer2D, obs -> coord, I);
+            double h = height3D * D / dist(obs -> coord, I);
+            int pas = width3D / L;
+            //int pas = 2;
+            SDL_RenderDrawLine(renderer3D, middle -> x + pas * k, 
+                                           middle -> y - (int) (h / 2),
+                                           middle -> x + pas * k, 
+                                           middle -> y + (int) (h / 2));
+            //middle -> x += 8;
+            free(I);
+        }
+        free(pix); 
+    }
+}
+
+void trapez_cast(matrice *pm, observer *obs, SDL_Renderer *renderer2D, 
+               SDL_Renderer *renderer3D, int scale, 
+               int width3D, int height3D, point *middle)
+{ //BOGUE POSSIBLE ? J'ai eu un CORE DUMPED a un moment..
+    point *pix, *I_vert, *I_horiz, *I;
+    double h;
+    int k = -L/2, pas = width3D / L;
+    point * (*functionPtr)(matrice *, point *, point *, int);
+    SDL_SetRenderDrawColor(renderer2D, 255, 0, 0, 255);//Rouge
+    
+    //On trace le 1er trait:
+    /*SDL_RenderDrawLine(renderer3D, middle -> x + pas * (-L/2), 
+                                           middle -> y - (int) (h / 2),
+                                           middle -> x + pas * (-L/2), 
+                                           middle -> y + (int) (h / 2));*/
+    
+    while (k < L/2) {
+        printf("salut\n");
+        pix = coord_pix(D, obs, k);
+        printf("coucou\n");
+        I_vert = cast_vertical(pm, obs -> coord, pix, scale);
+        I_horiz = cast_horizontal(pm, obs -> coord, pix, scale);
+        /*Pointeur vers fonction, qui pointera soit vers cast_vertical, 
+        soit vers cast_horizontal: */
+        
         if ((I_vert != NULL) && (I_horiz != NULL)) {
+            I = plus_proche(obs -> coord, I_vert, I_horiz);
+            if ( I == I_vert ) {
+                functionPtr = &cast_vertical;
+                draw_segment(renderer2D, obs -> coord, I_vert);      
+            } else {
+                functionPtr = &cast_horizontal;
+                draw_segment(renderer2D, obs -> coord, I_horiz); 
+            }
+        }   
+        else if (I_vert != NULL) { //Mur vertical
+            functionPtr = &cast_vertical;
+            I = I_vert;
+            draw_segment(renderer2D, obs -> coord, I_vert);
+        } else {
+            I = I_horiz;
+            functionPtr = &cast_horizontal;
+            draw_segment(renderer2D, obs -> coord, I_horiz);
+        }
+        h = height3D * D / dist(obs -> coord, I);
+        
+        point *current_I = malloc(sizeof(point));
+        current_I -> x = I -> x;
+        current_I -> y = I -> y;
+        //PAS la bonne condition dans ce while
+        while ( ( (current_I -> x / scale) == (I -> x / scale) ) &&
+                ( (current_I -> y / scale) == (I -> y / scale) ) ) {
+            free(pix);
+            free(I);
+            I = current_I;
+            k++;
+            pix = coord_pix(D, obs, k);
+            current_I = functionPtr(pm, obs -> coord, pix, scale);
+        }
+        h = height3D * D / dist(obs -> coord, I);
+        draw_segment(renderer2D, obs -> coord, I);
+        SDL_RenderDrawLine(renderer3D, middle -> x + pas * (k - 1), 
+                                           middle -> y - (int) (h / 2),
+                                           middle -> x + pas * (k - 1), 
+                                           middle -> y + (int) (h / 2));
+        /*free(pix);
+        free(current_I);
+        free(I);*/
+    }        
+        /*if ((I_vert != NULL) && (I_horiz != NULL)) {
             I = plus_proche(obs -> coord, I_vert, I_horiz);
         } else if (I_horiz == NULL) {
             I = I_vert;
@@ -204,7 +294,7 @@ void ray_cast (matrice *pm, observer *obs, SDL_Renderer *renderer2D,
             free(I);
         }
         free(pix); 
-    }
+    }*/
 }
 
 int main(int argc, char *argv[]) {
@@ -302,9 +392,11 @@ int main(int argc, char *argv[]) {
     SDL_RenderClear(renderer3D); //fond blanc    
     
     point *coord = malloc(sizeof(point));
-    coord -> x = scale+10;
-    coord -> y = scale+10;
-    double theta = PI/4;
+    //coord -> x = scale+10;
+    coord -> x = 3*scale;
+    //coord -> y = scale+10;
+    coord -> y = 3*scale;
+    double theta = -PI/3;
     
     observer *obs = malloc(sizeof(observer));
     obs -> coord = coord;
@@ -318,7 +410,8 @@ int main(int argc, char *argv[]) {
     
     //RAY CASTING:
     SDL_SetRenderDrawColor(renderer3D, 0, 0, 0, 255);
-    ray_cast(pm, obs, renderer2D, renderer3D, scale, width3D, height3D, middle); 
+    //ray_cast(pm, obs, renderer2D, renderer3D, scale, width3D, height3D, middle); 
+    trapez_cast(pm, obs, renderer2D, renderer3D, scale, width3D, height3D, middle);
 
     SDL_SetRenderDrawColor(renderer2D, 0, 0, 0, 255);
     draw_laby(pm, scale, renderer2D);
