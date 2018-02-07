@@ -410,8 +410,8 @@ int main(int argc, char *argv[]) {
     
     //RAY CASTING:
     SDL_SetRenderDrawColor(renderer3D, 0, 0, 0, 255);
-    //ray_cast(pm, obs, renderer2D, renderer3D, scale, width3D, height3D, middle); 
-    trapez_cast(pm, obs, renderer2D, renderer3D, scale, width3D, height3D, middle);
+    ray_cast(pm, obs, renderer2D, renderer3D, scale, width3D, height3D, middle); 
+    //trapez_cast(pm, obs, renderer2D, renderer3D, scale, width3D, height3D, middle);
 
     SDL_SetRenderDrawColor(renderer2D, 0, 0, 0, 255);
     draw_laby(pm, scale, renderer2D);
@@ -432,7 +432,7 @@ int main(int argc, char *argv[]) {
     
     
     
-    do {
+    /*do {
         SDL_Event e;
         if (SDL_PollEvent(&e)) {
             switch (e.type) {
@@ -440,13 +440,87 @@ int main(int argc, char *argv[]) {
                 printf("Exit.\n"); 
                 etat = QUIT;
                 break;
-		case SDL_KEYDOWN:
+		case SDLK_ESCAPE:
                 printf("Exit.\n"); 
                 etat = QUIT;
                 break;
             }
         }
     } while (etat != QUIT);
+    */
+    SDL_Event event;
+    while (etat != QUIT)
+    {
+    SDL_WaitEvent(&event);
+    switch(event.type)
+    {
+        case SDL_QUIT:
+            etat = QUIT;
+            break;
+        case SDL_KEYDOWN:
+            switch (event.key.keysym.sym)
+            {
+                case SDLK_ESCAPE:
+                    etat = QUIT;
+                    break;
+                    
+                case SDLK_UP:
+                    avance(obs);
+                    //disp_coord(obs -> coord);
+                    SDL_RenderClear(renderer2D);
+                    SDL_SetRenderDrawColor(renderer2D, 255, 255, 255, 0);
+                    SDL_RenderClear(renderer2D); //fond blanc
+                    SDL_SetRenderDrawColor(renderer2D, 0, 0, 0, 255);
+                    draw_laby(pm, scale, renderer2D);
+                    orig_ecran = coord_pix(D, obs, 0);
+                    bord_g = coord_pix(D, obs, L/2);
+                    bord_d = coord_pix(D, obs, -L/2);
+                    SDL_SetRenderDrawColor(renderer2D, 0, 255, 0, 255);//Vert
+                    draw_segment(renderer2D, obs -> coord, coord_pix(D, obs, 0));
+                    draw_segment(renderer2D, obs -> coord, bord_g);
+                    draw_segment(renderer2D, obs -> coord, bord_d);
+                    SDL_SetRenderDrawColor(renderer2D, 0, 0, 255, 255);//Bleu
+                    draw_segment(renderer2D, orig_ecran, bord_g);
+                    SDL_SetRenderDrawColor(renderer2D, 0, 0, 255, 255);//Bleu
+                    draw_segment(renderer2D, orig_ecran, bord_d);
+                    SDL_SetRenderDrawColor(renderer3D, 255, 255, 255, 0);
+                    SDL_RenderClear(renderer3D); //fond blanc
+                    SDL_SetRenderDrawColor(renderer3D, 0, 0, 0, 255);   
+                    ray_cast(pm, obs, renderer2D, renderer3D, scale, width3D, height3D, middle);
+                    SDL_RenderPresent(renderer2D);
+                    SDL_RenderPresent(renderer3D);
+                    break;
+                    
+                case SDLK_LEFT:
+                    theta += 0.1;
+                    rotate(theta, obs);
+                    SDL_RenderClear(renderer2D);
+                    SDL_SetRenderDrawColor(renderer2D, 255, 255, 255, 0);
+                    SDL_RenderClear(renderer2D); //fond blanc
+                    SDL_SetRenderDrawColor(renderer2D, 0, 0, 0, 255);
+                    draw_laby(pm, scale, renderer2D);
+                    orig_ecran = coord_pix(D, obs, 0);
+                    bord_g = coord_pix(D, obs, L/2);
+                    bord_d = coord_pix(D, obs, -L/2);
+                    SDL_SetRenderDrawColor(renderer2D, 0, 255, 0, 255);//Vert
+                    draw_segment(renderer2D, obs -> coord, coord_pix(D, obs, 0));
+                    draw_segment(renderer2D, obs -> coord, bord_g);
+                    draw_segment(renderer2D, obs -> coord, bord_d);
+                    SDL_SetRenderDrawColor(renderer2D, 0, 0, 255, 255);//Bleu
+                    draw_segment(renderer2D, orig_ecran, bord_g);
+                    SDL_SetRenderDrawColor(renderer2D, 0, 0, 255, 255);//Bleu
+                    draw_segment(renderer2D, orig_ecran, bord_d);
+                    SDL_SetRenderDrawColor(renderer3D, 255, 255, 255, 0);
+                    SDL_RenderClear(renderer3D); //fond blanc
+                    SDL_SetRenderDrawColor(renderer3D, 0, 0, 0, 255);   
+                    ray_cast(pm, obs, renderer2D, renderer3D, scale, width3D, height3D, middle);
+                    SDL_RenderPresent(renderer2D);
+                    SDL_RenderPresent(renderer3D);
+                    break;
+            }
+            break;
+        }
+    }
     SDL_DestroyRenderer(renderer2D);
     SDL_DestroyRenderer(renderer3D);
     SDL_DestroyWindow(laby2D);

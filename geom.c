@@ -62,3 +62,37 @@ vect *unitaire(point *coord, point *Pk)
     vect_unit->y = (Pk->y - coord -> y) / (double)norm;
     return vect_unit;
 }
+
+void avance(observer *obs){
+    //avancée de l'observateur en ligne droite.
+    obs -> coord -> x += 2*(obs -> cosinus);
+    obs -> coord -> y += 2*(obs -> sinus);
+}
+    
+void rotate(double theta, observer *obs){
+    //rotation de l'obersateur
+    theta += 0.1;
+    obs -> sinus = sin(theta);
+    obs -> cosinus = cos(theta);
+}
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

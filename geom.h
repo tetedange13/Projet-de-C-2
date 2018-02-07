@@ -25,6 +25,8 @@ point *coeff_to_pix(point *, int);
 point *pix_to_coeff(point *, int);
 point *coord_pix(int, observer *, int);
 vect *unitaire(point *, point *);
+void avance(observer *);
+void rotate(double, observer *);
 
 //point *mult(double, point *);
 //double scalar(point *, point *);
