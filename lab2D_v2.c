@@ -144,7 +144,15 @@ point *cast_horizontal(matrice *pm, point *coord, point *pix, int scale)
         if ( (DELTA + coord -> x < 0) || 
            ((int) ((DELTA + coord -> x) / scale) > (pm -> largeur - 1)) )
            //Si le point projete est HORS de l'aire graphique, on arrete 
-            return NULL; 
+            return NULL;
+        //Pour régler le probleme des coins:
+        if ( ( (int) (DELTA + coord -> x) % scale == 0 ) &&
+             ( (int) (GAMMA + coord -> y) % scale == 0 ) ) {
+            point *I = malloc(sizeof(point));
+            I -> x = DELTA + coord -> x;
+            I -> y = GAMMA + coord -> y;
+            return I;
+        }    
         if (pm->contenu[i - 1][(int) ((DELTA + coord -> x) / scale)] & PB) {    
             point *I = malloc(sizeof(point));
             I -> x = DELTA + coord -> x;
@@ -297,6 +305,24 @@ void trapez_cast(matrice *pm, observer *obs, SDL_Renderer *renderer2D,
     }*/
 }
 
+void draw_cone(observer *obs, SDL_Renderer *renderer2D)
+{
+    point *orig_ecran = coord_pix(D, obs, 0);
+    point *bord_g = coord_pix(D, obs, L/2);
+    point *bord_d = coord_pix(D, obs, -L/2);
+    SDL_SetRenderDrawColor(renderer2D, 0, 255, 0, 255);//Vert
+    draw_segment(renderer2D, obs -> coord, coord_pix(D, obs, 0));
+    draw_segment(renderer2D, obs -> coord, bord_g);
+    draw_segment(renderer2D, obs -> coord, bord_d);
+    SDL_SetRenderDrawColor(renderer2D, 0, 0, 255, 255);//Bleu
+    draw_segment(renderer2D, orig_ecran, bord_g);
+    SDL_SetRenderDrawColor(renderer2D, 0, 0, 255, 255);//Bleu
+    draw_segment(renderer2D, orig_ecran, bord_d);
+    free(orig_ecran);
+    free(bord_g);
+    free(bord_d);
+}
+
 int main(int argc, char *argv[]) {
     int width2D = 640, height2D = 640, scale;
     int largeur = 5, hauteur = 5;
@@ -356,15 +382,6 @@ int main(int argc, char *argv[]) {
     SDL_Window *laby3D = NULL;
     SDL_Renderer *renderer3D = NULL;
     int width3D = 640, height3D = 320;
-
-    if (SDL_Init(SDL_INIT_VIDEO) != 0) {
-        fprintf(stderr,
-                "\nImpossible d'initialiser SDL :  %s\n",
-                SDL_GetError()
-		);
-        exit(1);
-    }
-    atexit(SDL_Quit);
     laby3D = SDL_CreateWindow
 	("Vue 3D",                 
 	 800,     
@@ -392,11 +409,9 @@ int main(int argc, char *argv[]) {
     SDL_RenderClear(renderer3D); //fond blanc    
     
     point *coord = malloc(sizeof(point));
-    //coord -> x = scale+10;
     coord -> x = 3*scale;
-    //coord -> y = scale+10;
     coord -> y = 3*scale;
-    double theta = -PI/3;
+    double theta = PI/3;
     
     observer *obs = malloc(sizeof(observer));
     obs -> coord = coord;
@@ -415,141 +430,55 @@ int main(int argc, char *argv[]) {
 
     SDL_SetRenderDrawColor(renderer2D, 0, 0, 0, 255);
     draw_laby(pm, scale, renderer2D);
-    point *orig_ecran = coord_pix(D, obs, 0);
-    point *bord_g = coord_pix(D, obs, L/2);
-    point *bord_d = coord_pix(D, obs, -L/2);
-    SDL_SetRenderDrawColor(renderer2D, 0, 255, 0, 255);//Vert
-    draw_segment(renderer2D, obs -> coord, coord_pix(D, obs, 0));
-    draw_segment(renderer2D, obs -> coord, bord_g);
-    draw_segment(renderer2D, obs -> coord, bord_d);
-    SDL_SetRenderDrawColor(renderer2D, 0, 0, 255, 255);//Bleu
-    draw_segment(renderer2D, orig_ecran, bord_g);
-    SDL_SetRenderDrawColor(renderer2D, 0, 0, 255, 255);//Bleu
-    draw_segment(renderer2D, orig_ecran, bord_d);
+    draw_cone(obs, renderer2D);
     
     SDL_RenderPresent(renderer2D);
     SDL_RenderPresent(renderer3D);
     
     
     
-    /*do {
-        SDL_Event e;
-        if (SDL_PollEvent(&e)) {
-            switch (e.type) {
-                case SDL_QUIT :
-                printf("Exit.\n"); 
-                etat = QUIT;
-                break;
-		case SDLK_ESCAPE:
-                printf("Exit.\n"); 
-                etat = QUIT;
-                break;
-            }
-        }
-    } while (etat != QUIT);
-    */
     SDL_Event event;
     while (etat != QUIT)
     {
-    SDL_WaitEvent(&event);
-    switch(event.type)
-    {
-        case SDL_QUIT:
-            etat = QUIT;
-        break;
-        case SDL_KEYDOWN:
-            switch (event.key.keysym.sym)
-            {
-                case SDLK_ESCAPE:
-                    etat = QUIT;
-                break;
-                    
-                case SDLK_UP:
-                    avance(obs, 2);
-                    SDL_RenderClear(renderer2D);
-                    SDL_SetRenderDrawColor(renderer2D, 255, 255, 255, 0);
-                    SDL_RenderClear(renderer2D); //fond blanc
-                    SDL_SetRenderDrawColor(renderer2D, 0, 0, 0, 255);
-                    draw_laby(pm, scale, renderer2D);
-                    orig_ecran = coord_pix(D, obs, 0);
-                    bord_g = coord_pix(D, obs, L/2);
-                    bord_d = coord_pix(D, obs, -L/2);
-                    SDL_SetRenderDrawColor(renderer2D, 0, 255, 0, 255);//Vert
-                    draw_segment(renderer2D, obs -> coord, 
-                                 coord_pix(D, obs, 0));
-                    draw_segment(renderer2D, obs -> coord, bord_g);
-                    draw_segment(renderer2D, obs -> coord, bord_d);
-                    SDL_SetRenderDrawColor(renderer2D, 0, 0, 255, 255);//Bleu
-                    draw_segment(renderer2D, orig_ecran, bord_g);
-                    SDL_SetRenderDrawColor(renderer2D, 0, 0, 255, 255);//Bleu
-                    draw_segment(renderer2D, orig_ecran, bord_d);
-                    SDL_SetRenderDrawColor(renderer3D, 255, 255, 255, 0);
-                    SDL_RenderClear(renderer3D); //fond blanc
-                    SDL_SetRenderDrawColor(renderer3D, 0, 0, 0, 255);   
-                    ray_cast(pm, obs, renderer2D, renderer3D, scale, 
-                             width3D, height3D, middle);
-                    SDL_RenderPresent(renderer2D);
-                    SDL_RenderPresent(renderer3D);
-                break;
-                    
-                case SDLK_LEFT:
-                    theta -= 0.1;
-                    rotate(theta, obs);
-                    SDL_RenderClear(renderer2D);
-                    SDL_SetRenderDrawColor(renderer2D, 255, 255, 255, 0);
-                    SDL_RenderClear(renderer2D); //fond blanc
-                    SDL_SetRenderDrawColor(renderer2D, 0, 0, 0, 255);
-                    draw_laby(pm, scale, renderer2D);
-                    orig_ecran = coord_pix(D, obs, 0);
-                    bord_g = coord_pix(D, obs, L/2);
-                    bord_d = coord_pix(D, obs, -L/2);
-                    SDL_SetRenderDrawColor(renderer2D, 0, 255, 0, 255);//Vert
-                    draw_segment(renderer2D, obs -> coord,  
-                                 coord_pix(D, obs, 0));
-                    draw_segment(renderer2D, obs -> coord, bord_g);
-                    draw_segment(renderer2D, obs -> coord, bord_d);
-                    SDL_SetRenderDrawColor(renderer2D, 0, 0, 255, 255);//Bleu
-                    draw_segment(renderer2D, orig_ecran, bord_g);
-                    SDL_SetRenderDrawColor(renderer2D, 0, 0, 255, 255);//Bleu
-                    draw_segment(renderer2D, orig_ecran, bord_d);
-                    SDL_SetRenderDrawColor(renderer3D, 255, 255, 255, 0);
-                    SDL_RenderClear(renderer3D); //fond blanc
-                    SDL_SetRenderDrawColor(renderer3D, 0, 0, 0, 255);   
-                    ray_cast(pm, obs, renderer2D, renderer3D, scale, 
-                             width3D, height3D, middle);
-                    SDL_RenderPresent(renderer2D);
-                    SDL_RenderPresent(renderer3D);
-                break;
-                case SDLK_RIGHT:
-                    theta += 0.1;
-                    rotate(theta, obs);
-                    SDL_RenderClear(renderer2D);
-                    SDL_SetRenderDrawColor(renderer2D, 255, 255, 255, 0);
-                    SDL_RenderClear(renderer2D); //fond blanc
-                    SDL_SetRenderDrawColor(renderer2D, 0, 0, 0, 255);
-                    draw_laby(pm, scale, renderer2D);
-                    orig_ecran = coord_pix(D, obs, 0);
-                    bord_g = coord_pix(D, obs, L/2);
-                    bord_d = coord_pix(D, obs, -L/2);
-                    SDL_SetRenderDrawColor(renderer2D, 0, 255, 0, 255);//Vert
-                    draw_segment(renderer2D, obs -> coord,  
-                                 coord_pix(D, obs, 0));
-                    draw_segment(renderer2D, obs -> coord, bord_g);
-                    draw_segment(renderer2D, obs -> coord, bord_d);
-                    SDL_SetRenderDrawColor(renderer2D, 0, 0, 255, 255);//Bleu
-                    draw_segment(renderer2D, orig_ecran, bord_g);
-                    SDL_SetRenderDrawColor(renderer2D, 0, 0, 255, 255);//Bleu
-                    draw_segment(renderer2D, orig_ecran, bord_d);
-                    SDL_SetRenderDrawColor(renderer3D, 255, 255, 255, 0);
-                    SDL_RenderClear(renderer3D); //fond blanc
-                    SDL_SetRenderDrawColor(renderer3D, 0, 0, 0, 255);   
-                    ray_cast(pm, obs, renderer2D, renderer3D, scale, 
-                             width3D, height3D, middle);
-                    SDL_RenderPresent(renderer2D);
-                    SDL_RenderPresent(renderer3D);
-                break;                
+        if (SDL_PollEvent(&event)) {
+            if ( (event.type == SDL_WINDOWEVENT) && 
+                 (event.window.event == SDL_WINDOWEVENT_CLOSE) ) {    
+                printf("EXIT\n");
+                etat = QUIT;
+            } else {
+                //On commence par effacer les rendus precedents:
+                SDL_SetRenderDrawColor(renderer2D, 255, 255, 255, 0);
+                SDL_RenderClear(renderer2D); //fond blanc
+                SDL_SetRenderDrawColor(renderer3D, 255, 255, 255, 0);
+                SDL_RenderClear(renderer3D); //fond blanc
+                switch (event.key.keysym.sym) {
+                    /*case SDLK_ESCAPE:
+                        printf("EXIT\n");
+                        etat = QUIT;
+                        break;*/
+                    case SDLK_UP:
+                        avance(obs, 5);
+                        break;
+                        
+                    case SDLK_LEFT:
+                        theta -= 0.1;
+                        rotate(theta, obs);
+                        break;
+                    case SDLK_RIGHT:
+                        theta += 0.1;
+                        rotate(theta, obs);
+                        break;                
+                }
+                //Dans tous les cas on cree un nveau rendu et on l'affiche:
+                SDL_SetRenderDrawColor(renderer3D, 0, 0, 0, 255);   
+                ray_cast(pm, obs, renderer2D, renderer3D, scale, 
+                         width3D, height3D, middle);
+                SDL_SetRenderDrawColor(renderer2D, 0, 0, 0, 255);
+                draw_laby(pm, scale, renderer2D);
+                draw_cone(obs, renderer2D);                                     
+                SDL_RenderPresent(renderer2D);
+                SDL_RenderPresent(renderer3D);
             }
-        break;
         }
     }
     SDL_DestroyRenderer(renderer2D);
