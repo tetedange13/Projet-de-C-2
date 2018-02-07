@@ -63,15 +63,14 @@ vect *unitaire(point *coord, point *Pk)
     return vect_unit;
 }
 
-void avance(observer *obs){
-    //avancée de l'observateur en ligne droite.
-    obs -> coord -> x += 2*(obs -> cosinus);
-    obs -> coord -> y += 2*(obs -> sinus);
+void avance(observer *obs, int valeur) 
+{ //Deplacement de l'observateur en ligne droite (avant seulement)
+    obs -> coord -> x += valeur * (obs -> cosinus);
+    obs -> coord -> y += valeur * (obs -> sinus);
 }
     
-void rotate(double theta, observer *obs){
-    //rotation de l'obersateur
-    theta += 0.1;
+void rotate(double theta, observer *obs)
+{ //rotation de l'observateur
     obs -> sinus = sin(theta);
     obs -> cosinus = cos(theta);
 }
