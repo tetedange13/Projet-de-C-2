@@ -180,7 +180,6 @@ void ray_cast(matrice *pm, observer *obs, SDL_Renderer *renderer2D,
     SDL_SetRenderDrawColor(renderer2D, 255, 0, 0, 255);//Rouge
     int k;
     for (k = -L/2; k < L/2; k++) {
-        //printf("k=%d\n", k);
         point *pix = coord_pix(D, obs, k);
         point *I_vert = cast_vertical(pm, obs -> coord, pix, scale);
         point *I_horiz = cast_horizontal(pm, obs -> coord, pix, scale);
@@ -211,6 +210,16 @@ void ray_cast(matrice *pm, observer *obs, SDL_Renderer *renderer2D,
     }
 }
 
+short meme_case(point *a, point *b, int scale)
+{
+    if ( (a == NULL) || (b == NULL) )
+        return 0;
+    if ( ( (a -> x / scale) == (b -> x / scale) ) &&
+         ( (a -> y / scale) == (b -> y / scale) ) )
+       return 1;
+    return 0;   
+}
+
 void trapez_cast(matrice *pm, observer *obs, SDL_Renderer *renderer2D, 
                SDL_Renderer *renderer3D, int scale, 
                int width3D, int height3D, point *middle)
@@ -218,65 +227,65 @@ void trapez_cast(matrice *pm, observer *obs, SDL_Renderer *renderer2D,
     point *pix, *I_vert, *I_horiz, *I;
     double h;
     int k = -L/2, pas = width3D / L;
-    point * (*functionPtr)(matrice *, point *, point *, int);
+    point * (*functionPtr) (matrice *, point *, point *, int);
+    /*Pointeur vers fonction, qui pointera soit vers cast_vertical, 
+    soit vers cast_horizontal: */    
     SDL_SetRenderDrawColor(renderer2D, 255, 0, 0, 255);//Rouge
-    
-    //On trace le 1er trait:
-    /*SDL_RenderDrawLine(renderer3D, middle -> x + pas * (-L/2), 
-                                           middle -> y - (int) (h / 2),
-                                           middle -> x + pas * (-L/2), 
-                                           middle -> y + (int) (h / 2));*/
-    
+
     while (k < L/2) {
-        printf("salut\n");
         pix = coord_pix(D, obs, k);
-        printf("coucou\n");
         I_vert = cast_vertical(pm, obs -> coord, pix, scale);
         I_horiz = cast_horizontal(pm, obs -> coord, pix, scale);
-        /*Pointeur vers fonction, qui pointera soit vers cast_vertical, 
-        soit vers cast_horizontal: */
-        
+                
         if ((I_vert != NULL) && (I_horiz != NULL)) {
+        printf("dede\n");
             I = plus_proche(obs -> coord, I_vert, I_horiz);
             if ( I == I_vert ) {
                 functionPtr = &cast_vertical;
-                draw_segment(renderer2D, obs -> coord, I_vert);      
-            } else {
+                free(I_horiz);
+            } else
                 functionPtr = &cast_horizontal;
-                draw_segment(renderer2D, obs -> coord, I_horiz); 
-            }
+                free(I_vert);
         }   
         else if (I_vert != NULL) { //Mur vertical
+            printf("dada\n");
             functionPtr = &cast_vertical;
             I = I_vert;
-            draw_segment(renderer2D, obs -> coord, I_vert);
         } else {
+            printf("dodo\n");
             I = I_horiz;
             functionPtr = &cast_horizontal;
-            draw_segment(renderer2D, obs -> coord, I_horiz);
         }
+        draw_segment(renderer2D, obs -> coord, I);
         h = height3D * D / dist(obs -> coord, I);
-        
+        SDL_RenderDrawLine(renderer3D, middle -> x + pas * k, 
+                                       middle -> y - (int) (h / 2),
+                                       middle -> x + pas * k, 
+                                       middle -> y + (int) (h / 2));     
+        printf("coucou %d\n", k);
         point *current_I = malloc(sizeof(point));
         current_I -> x = I -> x;
         current_I -> y = I -> y;
         //PAS la bonne condition dans ce while
-        while ( ( (current_I -> x / scale) == (I -> x / scale) ) &&
-                ( (current_I -> y / scale) == (I -> y / scale) ) ) {
+        while ( (k < (L/2)) && (meme_case(I, current_I, scale)) ) {
             free(pix);
-            free(I);
-            I = current_I;
+            free(current_I);
             k++;
             pix = coord_pix(D, obs, k);
             current_I = functionPtr(pm, obs -> coord, pix, scale);
-        }
-        h = height3D * D / dist(obs -> coord, I);
-        draw_segment(renderer2D, obs -> coord, I);
-        SDL_RenderDrawLine(renderer3D, middle -> x + pas * (k - 1), 
+            printf("yo\n");
+        } 
+        draw_segment(renderer2D, obs -> coord, current_I);
+        free(I);
+        free(current_I);
+        free(pix);
+        
+        
+        /*SDL_RenderDrawLine(renderer3D, middle -> x + pas * (k - 1), 
                                            middle -> y - (int) (h / 2),
                                            middle -> x + pas * (k - 1), 
                                            middle -> y + (int) (h / 2));
-        /*free(pix);
+        free(pix);
         free(current_I);
         free(I);*/
     }        
@@ -425,8 +434,8 @@ int main(int argc, char *argv[]) {
     
     //RAY CASTING:
     SDL_SetRenderDrawColor(renderer3D, 0, 0, 0, 255);
-    ray_cast(pm, obs, renderer2D, renderer3D, scale, width3D, height3D, middle); 
-    //trapez_cast(pm, obs, renderer2D, renderer3D, scale, width3D, height3D, middle);
+    //ray_cast(pm, obs, renderer2D, renderer3D, scale, width3D, height3D, middle); 
+    trapez_cast(pm, obs, renderer2D, renderer3D, scale, width3D, height3D, middle);
 
     SDL_SetRenderDrawColor(renderer2D, 0, 0, 0, 255);
     draw_laby(pm, scale, renderer2D);
@@ -473,6 +482,8 @@ int main(int argc, char *argv[]) {
                 SDL_SetRenderDrawColor(renderer3D, 0, 0, 0, 255);   
                 ray_cast(pm, obs, renderer2D, renderer3D, scale, 
                          width3D, height3D, middle);
+                trapez_cast(pm, obs, renderer2D, renderer3D, scale, 
+                         width3D, height3D, middle);                
                 SDL_SetRenderDrawColor(renderer2D, 0, 0, 0, 255);
                 draw_laby(pm, scale, renderer2D);
                 draw_cone(obs, renderer2D);                                     
