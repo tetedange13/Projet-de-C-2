@@ -20,6 +20,7 @@ point *cast_horizontal(matrice *, point *, point *, int);
 point *plus_proche(point *, point *, point *);
 void ray_cast(matrice *, observer *, SDL_Renderer *, SDL_Renderer *, int, int, 
               int, point *);
+short meme_case(point *, point *, int);
 void trapez_cast(matrice *, observer *, SDL_Renderer *, SDL_Renderer *, int, 
                  int, int, point *);              
 void draw_cone(observer *, SDL_Renderer *);

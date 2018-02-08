@@ -178,6 +178,7 @@ void ray_cast(matrice *pm, observer *obs, SDL_Renderer *renderer2D,
                int width3D, int height3D, point *middle)
 {
     SDL_SetRenderDrawColor(renderer2D, 255, 0, 0, 255);//Rouge
+    SDL_SetRenderDrawColor(renderer3D, 0, 0, 0, 255);
     int k;
     for (k = -L/2; k < L/2; k++) {
         point *pix = coord_pix(D, obs, k);
@@ -194,7 +195,6 @@ void ray_cast(matrice *pm, observer *obs, SDL_Renderer *renderer2D,
             free(I_vert);
         }            
         if(I != NULL){
-            
             draw_segment(renderer2D, obs -> coord, I);
             double h = height3D * D / dist(obs -> coord, I);
             int pas = width3D / L;
@@ -214,8 +214,8 @@ short meme_case(point *a, point *b, int scale)
 {
     if ( (a == NULL) || (b == NULL) )
         return 0;
-    if ( ( (a -> x / scale) == (b -> x / scale) ) &&
-         ( (a -> y / scale) == (b -> y / scale) ) )
+    if ( ( (int) (a -> x / scale) == (int) (b -> x / scale) ) &&
+         ( (int) (a -> y / scale) == (int) (b -> y / scale) ) )
        return 1;
     return 0;   
 }
@@ -223,36 +223,37 @@ short meme_case(point *a, point *b, int scale)
 void trapez_cast(matrice *pm, observer *obs, SDL_Renderer *renderer2D, 
                SDL_Renderer *renderer3D, int scale, 
                int width3D, int height3D, point *middle)
-{ //BOGUE POSSIBLE ? J'ai eu un CORE DUMPED a un moment..
-    point *pix, *I_vert, *I_horiz, *I;
+{
     double h;
-    int k = -L/2, pas = width3D / L;
+    int k = -L/2, pas = width3D / L, k_tmp, h_tmp;
     point * (*functionPtr) (matrice *, point *, point *, int);
     /*Pointeur vers fonction, qui pointera soit vers cast_vertical, 
     soit vers cast_horizontal: */    
-    SDL_SetRenderDrawColor(renderer2D, 255, 0, 0, 255);//Rouge
-
+    SDL_SetRenderDrawColor(renderer2D, 0, 0, 255, 255);//Bleu
+    int i = 0;
     while (k < L/2) {
-        pix = coord_pix(D, obs, k);
-        I_vert = cast_vertical(pm, obs -> coord, pix, scale);
-        I_horiz = cast_horizontal(pm, obs -> coord, pix, scale);
-                
+        if (i % 2 == 0)
+            SDL_SetRenderDrawColor(renderer3D, 255, 0, 0, 255);//Rouge
+        else
+            SDL_SetRenderDrawColor(renderer3D, 0, 255, 0, 255);//Vert
+        point *pix = coord_pix(D, obs, k);
+        point *I_vert = cast_vertical(pm, obs -> coord, pix, scale);
+        point *I_horiz = cast_horizontal(pm, obs -> coord, pix, scale);
+        point *I;        
         if ((I_vert != NULL) && (I_horiz != NULL)) {
-        printf("dede\n");
             I = plus_proche(obs -> coord, I_vert, I_horiz);
             if ( I == I_vert ) {
                 functionPtr = &cast_vertical;
                 free(I_horiz);
-            } else
+            } else {
                 functionPtr = &cast_horizontal;
                 free(I_vert);
+            }
         }   
         else if (I_vert != NULL) { //Mur vertical
-            printf("dada\n");
             functionPtr = &cast_vertical;
             I = I_vert;
         } else {
-            printf("dodo\n");
             I = I_horiz;
             functionPtr = &cast_horizontal;
         }
@@ -262,56 +263,42 @@ void trapez_cast(matrice *pm, observer *obs, SDL_Renderer *renderer2D,
                                        middle -> y - (int) (h / 2),
                                        middle -> x + pas * k, 
                                        middle -> y + (int) (h / 2));     
-        printf("coucou %d\n", k);
+        k_tmp = k;
+        h_tmp = h;
         point *current_I = malloc(sizeof(point));
         current_I -> x = I -> x;
         current_I -> y = I -> y;
-        //PAS la bonne condition dans ce while
+        //PAS la bonne condition dans ce while ??
         while ( (k < (L/2)) && (meme_case(I, current_I, scale)) ) {
             free(pix);
             free(current_I);
-            k++;
-            pix = coord_pix(D, obs, k);
+            pix = coord_pix(D, obs, ++k);
             current_I = functionPtr(pm, obs -> coord, pix, scale);
-            printf("yo\n");
-        } 
-        draw_segment(renderer2D, obs -> coord, current_I);
-        free(I);
-        free(current_I);
-        free(pix);
-        
-        
-        /*SDL_RenderDrawLine(renderer3D, middle -> x + pas * (k - 1), 
-                                           middle -> y - (int) (h / 2),
-                                           middle -> x + pas * (k - 1), 
-                                           middle -> y + (int) (h / 2));
-        free(pix);
-        free(current_I);
-        free(I);*/
-    }        
-        /*if ((I_vert != NULL) && (I_horiz != NULL)) {
-            I = plus_proche(obs -> coord, I_vert, I_horiz);
-        } else if (I_horiz == NULL) {
-            I = I_vert;
-            free(I_horiz);
-        } else if (I_vert == NULL) {
-            I = I_horiz;
-            free(I_vert);
-        }            
-        if(I != NULL){
-            draw_segment(renderer2D, obs -> coord, I);
-            double h = height3D * D / dist(obs -> coord, I);
-            int pas = width3D / L;
-            //int pas = 2;
-            SDL_RenderDrawLine(renderer3D, middle -> x + pas * k, 
-                                           middle -> y - (int) (h / 2),
-                                           middle -> x + pas * k, 
-                                           middle -> y + (int) (h / 2));
-            //middle -> x += 8;
-            free(I);
         }
-        free(pix); 
-    }*/
+        free(I);
+        free(pix);
+        pix = coord_pix(D, obs, k - 1);
+        if (current_I != NULL)
+            free(current_I);
+        current_I = functionPtr(pm, obs -> coord, pix, scale);
+        free(pix);
+        draw_segment(renderer2D, obs -> coord, current_I);
+        h = height3D * D / dist(obs -> coord, current_I);
+        free(current_I);
+        SDL_RenderDrawLine(renderer3D, middle -> x + pas * (k), 
+                                       middle -> y - (int) (h / 2),
+                                       middle -> x + pas * (k), 
+                                       middle -> y + (int) (h / 2)); 
+        SDL_RenderDrawLine(renderer3D, middle -> x + pas * k_tmp, 
+                                       middle -> y + (int) (h_tmp / 2),
+                                       middle -> x + pas * (k), 
+                                       middle -> y + (int) (h / 2));  
+        SDL_RenderDrawLine(renderer3D, middle -> x + pas * k_tmp, 
+                                       middle -> y - (int) (h_tmp / 2),
+                                       middle -> x + pas * (k), 
+                                       middle -> y - (int) (h / 2)); 
+        i++;
+    }        
 }
 
 void draw_cone(observer *obs, SDL_Renderer *renderer2D)
@@ -333,19 +320,18 @@ void draw_cone(observer *obs, SDL_Renderer *renderer2D)
 }
 
 int main(int argc, char *argv[]) {
-    int width2D = 640, height2D = 640, scale;
     int largeur = 5, hauteur = 5;
     int h = hauteur + 1, l = largeur + 1;
-    scale = width2D/(largeur+2);
     tab_nk *tab = init_tab_ouvr(h, l);
     matrice *pm = init_mat(l, h);
     srand(time(NULL));
     gen_laby(tab, pm);
-    disp_laby(pm); 
-    
+    disp_laby(pm);
+    /*point *a = malloc(sizeof(point));
+    a -> x = 1; a -> y = 1;
+    printf("bool=%d\n", meme_case(a,NULL, scale));*/
     SDL_Window *laby2D = NULL;
     SDL_Renderer *renderer2D = NULL;
-    status etat = CONTINUE;
     if (SDL_Init(SDL_INIT_VIDEO) != 0) {
         fprintf(stderr,
                 "\nImpossible d'initialiser SDL :  %s\n",
@@ -354,6 +340,7 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
     atexit(SDL_Quit);
+    int width2D = 640, height2D = 640;
     laby2D = SDL_CreateWindow
 	("Labyrinthe",                 
 	 100,     
@@ -380,14 +367,7 @@ int main(int argc, char *argv[]) {
     SDL_SetRenderDrawColor(renderer2D, 255, 255, 255, 0);
     SDL_RenderClear(renderer2D); //fond blanc
 
-
-       
-    
-    
-    
-    
     //2e fenetre:
-    
     SDL_Window *laby3D = NULL;
     SDL_Renderer *renderer3D = NULL;
     int width3D = 640, height3D = 320;
@@ -417,6 +397,7 @@ int main(int argc, char *argv[]) {
     SDL_SetRenderDrawColor(renderer3D, 255, 255, 255, 0);
     SDL_RenderClear(renderer3D); //fond blanc    
     
+    int scale = width2D/(largeur+2);
     point *coord = malloc(sizeof(point));
     coord -> x = 3*scale;
     coord -> y = 3*scale;
@@ -433,10 +414,10 @@ int main(int argc, char *argv[]) {
     
     
     //RAY CASTING:
-    SDL_SetRenderDrawColor(renderer3D, 0, 0, 0, 255);
-    //ray_cast(pm, obs, renderer2D, renderer3D, scale, width3D, height3D, middle); 
-    trapez_cast(pm, obs, renderer2D, renderer3D, scale, width3D, height3D, middle);
-
+    ray_cast(pm, obs, renderer2D, renderer3D, scale, width3D, height3D, middle);
+    trapez_cast(pm, obs, renderer2D, renderer3D, scale, width3D, height3D, 
+                middle);
+     
     SDL_SetRenderDrawColor(renderer2D, 0, 0, 0, 255);
     draw_laby(pm, scale, renderer2D);
     draw_cone(obs, renderer2D);
@@ -444,8 +425,18 @@ int main(int argc, char *argv[]) {
     SDL_RenderPresent(renderer2D);
     SDL_RenderPresent(renderer3D);
     
-    
-    
+    /*SDL_Event event;
+    while (etat != QUIT)
+    {
+        if (SDL_PollEvent(&event)) {
+            if ( (event.type == SDL_WINDOWEVENT) && 
+                 (event.window.event == SDL_WINDOWEVENT_CLOSE) ) {    
+                printf("EXIT\n");
+                etat = QUIT; 
+            }
+        }
+    }*/     
+    status etat = CONTINUE;
     SDL_Event event;
     while (etat != QUIT)
     {
@@ -461,10 +452,6 @@ int main(int argc, char *argv[]) {
                 SDL_SetRenderDrawColor(renderer3D, 255, 255, 255, 0);
                 SDL_RenderClear(renderer3D); //fond blanc
                 switch (event.key.keysym.sym) {
-                    /*case SDLK_ESCAPE:
-                        printf("EXIT\n");
-                        etat = QUIT;
-                        break;*/
                     case SDLK_UP:
                         avance(obs, 5);
                         break;
@@ -479,11 +466,11 @@ int main(int argc, char *argv[]) {
                         break;                
                 }
                 //Dans tous les cas on cree un nveau rendu et on l'affiche:
-                SDL_SetRenderDrawColor(renderer3D, 0, 0, 0, 255);   
+                SDL_SetRenderDrawColor(renderer3D, 0, 0, 0, 255);
                 ray_cast(pm, obs, renderer2D, renderer3D, scale, 
                          width3D, height3D, middle);
                 trapez_cast(pm, obs, renderer2D, renderer3D, scale, 
-                         width3D, height3D, middle);                
+                         width3D, height3D, middle); 
                 SDL_SetRenderDrawColor(renderer2D, 0, 0, 0, 255);
                 draw_laby(pm, scale, renderer2D);
                 draw_cone(obs, renderer2D);                                     
