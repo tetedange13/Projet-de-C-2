@@ -108,6 +108,14 @@ point *cast_vertical(matrice *pm, point *coord, point *pix, int scale)
            ((int) ((DELTA + coord -> y) / scale) > (pm -> hauteur - 1)) )
            //Si le point projete est HORS de l'aire graphique, on arrete  
             return NULL; 
+        //Pour régler le probleme des coins:
+        /*if ( ( (int) (DELTA + coord -> y) % scale == 0 ) &&
+             ( (int) (GAMMA + coord -> x) % scale == 0 ) ) {
+            point *I = malloc(sizeof(point));
+            I -> x = GAMMA + coord -> x;
+            I -> y = DELTA + coord -> y;
+            return I;
+        }*/               
         if (pm->contenu[(int) ((DELTA + coord -> y) / scale)][j - 1] & PD) {    
             point *I = malloc(sizeof(point));
             I -> x = GAMMA + coord -> x;
@@ -146,13 +154,13 @@ point *cast_horizontal(matrice *pm, point *coord, point *pix, int scale)
            //Si le point projete est HORS de l'aire graphique, on arrete 
             return NULL;
         //Pour régler le probleme des coins:
-        if ( ( (int) (DELTA + coord -> x) % scale == 0 ) &&
+        /*if ( ( (int) (DELTA + coord -> x) % scale == 0 ) &&
              ( (int) (GAMMA + coord -> y) % scale == 0 ) ) {
             point *I = malloc(sizeof(point));
             I -> x = DELTA + coord -> x;
             I -> y = GAMMA + coord -> y;
             return I;
-        }    
+        } */   
         if (pm->contenu[i - 1][(int) ((DELTA + coord -> x) / scale)] & PB) {    
             point *I = malloc(sizeof(point));
             I -> x = DELTA + coord -> x;
@@ -229,7 +237,6 @@ void trapez_cast(matrice *pm, observer *obs, SDL_Renderer *renderer2D,
     point * (*functionPtr) (matrice *, point *, point *, int);
     /*Pointeur vers fonction, qui pointera soit vers cast_vertical, 
     soit vers cast_horizontal: */    
-    SDL_SetRenderDrawColor(renderer2D, 0, 0, 255, 255);//Bleu
     int i = 0;
     while (k < L/2) {
         if (i % 2 == 0)
@@ -257,6 +264,11 @@ void trapez_cast(matrice *pm, observer *obs, SDL_Renderer *renderer2D,
             I = I_horiz;
             functionPtr = &cast_horizontal;
         }
+        
+        /*if ((I -> x % scale == 0) && (I -> y % scale == 0))
+            FAIRE UN TRUC!!!*/
+        
+        SDL_SetRenderDrawColor(renderer2D, 255, 0, 0, 255);//Rouge
         draw_segment(renderer2D, obs -> coord, I);
         h = height3D * D / dist(obs -> coord, I);
         SDL_RenderDrawLine(renderer3D, middle -> x + pas * k, 
@@ -282,6 +294,7 @@ void trapez_cast(matrice *pm, observer *obs, SDL_Renderer *renderer2D,
             free(current_I);
         current_I = functionPtr(pm, obs -> coord, pix, scale);
         free(pix);
+        SDL_SetRenderDrawColor(renderer2D, 0, 0, 255, 255);//Bleu
         draw_segment(renderer2D, obs -> coord, current_I);
         h = height3D * D / dist(obs -> coord, current_I);
         free(current_I);
@@ -414,7 +427,7 @@ int main(int argc, char *argv[]) {
     
     
     //RAY CASTING:
-    ray_cast(pm, obs, renderer2D, renderer3D, scale, width3D, height3D, middle);
+    //ray_cast(pm, obs, renderer2D, renderer3D, scale, width3D, height3D, middle);
     trapez_cast(pm, obs, renderer2D, renderer3D, scale, width3D, height3D, 
                 middle);
      
@@ -467,8 +480,8 @@ int main(int argc, char *argv[]) {
                 }
                 //Dans tous les cas on cree un nveau rendu et on l'affiche:
                 SDL_SetRenderDrawColor(renderer3D, 0, 0, 0, 255);
-                ray_cast(pm, obs, renderer2D, renderer3D, scale, 
-                         width3D, height3D, middle);
+                //ray_cast(pm, obs, renderer2D, renderer3D, scale, 
+                //         width3D, height3D, middle);
                 trapez_cast(pm, obs, renderer2D, renderer3D, scale, 
                          width3D, height3D, middle); 
                 SDL_SetRenderDrawColor(renderer2D, 0, 0, 0, 255);
