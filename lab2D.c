@@ -1,3 +1,4 @@
+
 #include "lab2D.h"
 
 void draw_laby(matrice *pm, int marg, SDL_Renderer *renderer){
