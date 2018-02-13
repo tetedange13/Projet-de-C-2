@@ -22,10 +22,6 @@ double angle(point *a, point *b, point *c)
 
     return acos(prod_scal/(norm_AB * norm_BC));
     
-    /*if -1 <= prod_scal/(norm_u * norm_v) <= 1: 
-       
-    else:
-        return round(prod_scal/(norm_u * norm_v) *500)*/
 }
 
 point *coeff_to_pix(point *coeff, int scale)
