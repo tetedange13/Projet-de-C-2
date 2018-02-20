@@ -49,6 +49,29 @@ void draw_croix(SDL_Renderer *renderer, point *pt)
                                  (int) (pt -> x + 2), (int) (pt -> y) );
 }
 
+short est_angle(double coord_x, double coord_y, int scale, matrice *pm)
+{
+    if ( ( ( (int) (coord_x / scale) == 1 ) && 
+         ( (int) (coord_y / scale) == pm -> largeur ) ) //En haut a droite
+       || ( ( (int) (coord_x / scale) == pm -> largeur ) && 
+         ( (int) (coord_y / scale) == 1 ) ) ) //En haut a droite 
+        //printf("haut droite\n");
+        return 1;
+    if ( ( (int) (coord_x / scale) == 0 ) && 
+         ( (int) (coord_y / scale) == 1 ) ) //En haut a gauche
+        //printf("haut gauche\n");         
+        return 1;
+    if ( ( (int) (coord_x / scale) == pm -> hauteur ) && 
+         ( (int) (coord_y / scale) == pm -> largeur ) ) //En bas a droite
+        //printf("bas droite\n");
+        return 1;
+    if ( ( (int) (coord_x / scale) == 0 ) && 
+         ( (int) (coord_y / scale) == pm -> hauteur ) ) //En bas a gauche
+        //printf("bas gauche\n");
+        return 1;
+    return 0;
+}
+
 point *cast_vertical(matrice *pm, point *coord, point *pix, int scale)
 {
     int j_pix = pix -> x / scale;
@@ -57,7 +80,7 @@ point *cast_vertical(matrice *pm, point *coord, point *pix, int scale)
     int j_lim, incr, j_start;
     double GAMMA, DELTA;
     if ( (int) (gamma) == 0) {
-        printf("c'est gamma vertical\n");
+        printf("c'est gamma vert\n");
         return NULL;
     } if (gamma > 0) {
 	    j_start = j_pix + 1;
@@ -71,14 +94,22 @@ point *cast_vertical(matrice *pm, point *coord, point *pix, int scale)
 	for(int j = j_start; j != j_lim; j += incr) {
 	    GAMMA = j * scale - coord -> x;
 	    DELTA = GAMMA * delta / gamma;
-        if ( (DELTA + coord -> y < 0) || 
+	    double ligne = (GAMMA + coord -> x) / scale;
+	    double col = (DELTA + coord -> y) / scale;
+	    printf( "Vert: i=%d et j=%d\n", (int) (ligne), (int) (col) );
+        if ( est_angle(GAMMA + coord -> x, DELTA + coord -> y, scale, pm) ) {
+            point *I = malloc(sizeof(point));
+            I -> x = GAMMA + coord -> x;
+            I -> y = DELTA + coord -> y;
+            return I;
+        } if ( (DELTA + coord -> y < 0) || 
            ((int) ((DELTA + coord -> y) / scale) > (pm -> hauteur - 1)) ) {
            //Si le point projete est HORS de l'aire graphique, on arrete  
             printf("C'est sorti vert\n");
             return NULL;
-        } if ( ( (int) (DELTA + coord -> y) % scale == 0 ) ||
-               (pm->contenu[(int) ((DELTA + coord -> y) / scale)][j - 1] & PD) )
-          {    
+        /*} if ( ( (int) (DELTA + coord -> y) % scale == 0 ) ||
+               (pm->contenu[(int) ((DELTA + coord -> y) / scale)][j - 1] & PD) ) {*/   
+        } if (pm->contenu[(int) ((DELTA + coord -> y) / scale)][j - 1] & PD) {
             point *I = malloc(sizeof(point));
             I -> x = GAMMA + coord -> x;
             I -> y = DELTA + coord -> y;
@@ -97,7 +128,7 @@ point *cast_horizontal(matrice *pm, point *coord, point *pix, int scale)
     int i_lim, incr, i_start;
     double GAMMA, DELTA;
     if ( (int) gamma == 0) {
-        printf("c'est gamma vertical\n");
+        printf("c'est gamma horiz\n");
         return NULL;
     } if (gamma > 0) {
 	    i_start = i_pix + 1;
@@ -108,16 +139,25 @@ point *cast_horizontal(matrice *pm, point *coord, point *pix, int scale)
 	    i_lim = 0;
 	    incr = -1;
 	}
-	for(int i = i_start; i != i_lim; i += incr) {
+	for (int i = i_start; i != i_lim; i += incr) {
 	    GAMMA = i * scale - coord -> y;
 	    DELTA = GAMMA * delta / gamma;
-        if ( (DELTA + coord -> x < 0) || 
+        double ligne = (DELTA + coord -> x) / scale;
+        double col = (GAMMA + coord -> y) / scale;
+        printf( "Horiz: i=%d j=%d\n", (int) (ligne), (int) (col) );
+        if ( est_angle(DELTA + coord -> x, GAMMA + coord -> y, scale, pm) ) {
+            point *I = malloc(sizeof(point));
+            I -> x = DELTA + coord -> x;
+            I -> y = GAMMA + coord -> y;
+            return I;
+        } if ( (DELTA + coord -> x < 0) || 
            ((int) ((DELTA + coord -> x) / scale) > (pm -> largeur - 1)) ) {
            //Si le point projete est HORS de l'aire graphique, on arrete
             printf("C'est sorti horiz\n");
             return NULL;
-        } if ( ( (int) (DELTA + coord -> x) % scale == 0 ) ||
-             (pm->contenu[i - 1][(int) ((DELTA + coord -> x) / scale)] & PB) ) {    
+        /*} if ( ( (int) (DELTA + coord -> x) % scale == 0 ) ||
+             (pm->contenu[i - 1][(int) ((DELTA + coord -> x) / scale)] & PB) ) {*/   
+        } if (pm->contenu[i - 1][(int) ((DELTA + coord -> x) / scale)] & PB) {
             point *I = malloc(sizeof(point));
             I -> x = DELTA + coord -> x;
             I -> y = GAMMA + coord -> y;
@@ -208,20 +248,29 @@ point *point_impact(observer *obs, int k, int scale, matrice *pm)
 
 void trapez_cast(matrice *pm, observer *obs, SDL_Renderer *renderer2D, 
                SDL_Renderer *renderer3D, int scale, 
-               int width3D, int height3D, point *middle)
+               int width3D, int height3D, point *middle, short *test)
 {
     double h;
-    int k = -L/2, pas = width3D / L + 1, k_tmp, h_tmp;
-    /*Pointeur vers fonction, qui pointera soit vers cast_vertical, 
-    soit vers cast_horizontal: */    
+    int k = -L/2, pas = width3D / L + 1, k_tmp, h_tmp;  
     SDL_SetRenderDrawColor(renderer3D, 0, 255, 255, 0);
     while (k < L/2) {
+        printf("k=%d\n", k);
         point *I = point_impact(obs, k, scale, pm);    
-        /*if (I == NULL) {
-            avance(obs, 1);
+        if (I == NULL) {
+            //avance(obs, 1);
+            SDL_SetRenderDrawColor(renderer2D, 0, 255, 0, 255);//Vert
+            point *pix = coord_pix(D, obs, k);
+            int vect = pix -> x - obs -> coord -> x;
+            int vect2 = pix -> y - obs -> coord -> y;
+            pix -> x = pix -> x + scale*vect/5; 
+            pix -> y = pix -> y + scale*vect2/5; 
+            draw_segment(renderer2D, obs -> coord, pix);
+            free(pix);
+            k++;
             printf("sprint 666666666666666666666\n");
+            *test = 0;
             continue;
-        }*/
+        }
         SDL_SetRenderDrawColor(renderer2D, 255, 0, 0, 255);//Rouge
         draw_segment(renderer2D, obs -> coord, I);
         h = 1.5 * height3D * D / dist(obs -> coord, I);
@@ -369,10 +418,10 @@ int main(int argc, char *argv[]) {
     middle -> x = width3D / 2;
     middle -> y = height3D / 2;
     
-    
+    short test = 1;
     //RAY CASTING:
     trapez_cast(pm, obs, renderer2D, renderer3D, scale, width3D, height3D, 
-                middle);
+                middle, &test);
      
     SDL_SetRenderDrawColor(renderer2D, 0, 0, 0, 255);
     draw_laby(pm, scale, renderer2D);
@@ -391,6 +440,7 @@ int main(int argc, char *argv[]) {
                 printf("EXIT\n");
                 etat = QUIT;
             } else {
+                if (test) {
                 //On commence par effacer les rendus precedents:
                 SDL_SetRenderDrawColor(renderer2D, 255, 255, 255, 0);
                 SDL_RenderClear(renderer2D); //fond blanc
@@ -412,10 +462,11 @@ int main(int argc, char *argv[]) {
                         rotate(theta, obs);
                         break;                
                 }
+                }
                 //Dans tous les cas on cree un nveau rendu et on l'affiche:
-                SDL_SetRenderDrawColor(renderer3D, 0, 0, 0, 255);
+                SDL_SetRenderDrawColor(renderer3D, 0, 0, 0, 255); //Noir
                 trapez_cast(pm, obs, renderer2D, renderer3D, scale, 
-                         width3D, height3D, middle); 
+                         width3D, height3D, middle, &test); 
                 SDL_SetRenderDrawColor(renderer2D, 0, 0, 0, 255);
                 draw_laby(pm, scale, renderer2D);
                 draw_cone(obs, renderer2D);                                     
