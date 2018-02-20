@@ -1,7 +1,0 @@
-#!/bin/bash
-
-gcc -c -Wall source2.c
-gcc -c -Wall geom.c
-gcc -c -Wall lab2D_v2.c 
-gcc -Wall *.o `sdl2-config --cflags --libs` -lm
-
