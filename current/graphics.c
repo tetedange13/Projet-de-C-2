@@ -246,12 +246,23 @@ point *point_impact(observer *obs, int k, int scale, matrice *pm)
     return I;                    
 }
 
+void draw_murs(point *middle, SDL_Renderer *renderer3D, int k_tmp, int h_tmp,
+               int k, int k_tmp)
+{
+    //Barre verticale de gauche:
+    SDL_RenderDrawLine(renderer3D, (int) (middle -> x + pas * k), 
+                                           (int) (middle -> y - h / 2),
+                                           (int) (middle -> x + pas * k), 
+                                           (int) (middle -> y + h / 2));
+}
+
 void trapez_cast(matrice *pm, observer *obs, SDL_Renderer *renderer2D, 
                SDL_Renderer *renderer3D, int scale, 
                int width3D, int height3D, point *middle, short *test)
 {
     double h;
-    int k = -L/2, pas = width3D / L + 1, k_tmp, h_tmp;  
+    int k = -L/2, pas = width3D / L + 1, k_tmp, h_tmp;
+    short no_twist = 1;
     SDL_SetRenderDrawColor(renderer3D, 0, 255, 255, 0);
     while (k < L/2) {
         printf("k=%d\n", k);
@@ -274,25 +285,32 @@ void trapez_cast(matrice *pm, observer *obs, SDL_Renderer *renderer2D,
         SDL_SetRenderDrawColor(renderer2D, 255, 0, 0, 255);//Rouge
         draw_segment(renderer2D, obs -> coord, I);
         h = 1.5 * height3D * D / dist(obs -> coord, I);
-        SDL_RenderDrawLine(renderer3D, (int) (middle -> x + pas * k), 
-                                       (int) (middle -> y - h / 2),
-                                       (int) (middle -> x + pas * k), 
-                                       (int) (middle -> y + h / 2));     
-        k_tmp = k;
+        if (no_twist) {
+                 
+            k_tmp = k;    
+        } else {
+            SDL_RenderDrawLine(renderer3D, (int) (middle -> x + pas * (k - 1)), 
+                                           (int) (middle -> y - h / 2),
+                                           (int) (middle -> x + pas * (k - 1)), 
+                                           (int) (middle -> y + h / 2));  
+            no_twist = 1;
+            k_tmp = k - 1;
+        }    
+        
         h_tmp = h;
         point *current_I = malloc(sizeof(point));
         current_I -> x = I -> x;
         current_I -> y = I -> y;
         while ( (k < (L/2)) && (meme_case(I, current_I, scale)) ) {
-            //free(current_I);
+            free(current_I);
             current_I = point_impact(obs, ++k, scale, pm);    
         }
-        current_I = point_impact(obs, k - 1, scale, pm);
-        if (current_I != NULL) {
+        if ( (k - 1) != k_tmp ) {
+            current_I = point_impact(obs, k - 1, scale, pm);
+        
             SDL_SetRenderDrawColor(renderer2D, 0, 0, 255, 255);//Bleu
             draw_segment(renderer2D, obs -> coord, current_I);
             h = 1.5 * height3D * D / dist(obs -> coord, current_I);
-            
             free(current_I);
             SDL_RenderDrawLine(renderer3D, (int) (middle -> x + pas * k), 
                                            (int) (middle -> y - h / 2),
@@ -306,7 +324,8 @@ void trapez_cast(matrice *pm, observer *obs, SDL_Renderer *renderer2D,
                                            (int) (middle -> y - h_tmp / 2),
                                            (int) (middle -> x + pas * k), 
                                            (int) (middle -> y - h / 2) ); 
-        }
+        } else
+            no_twist = 0;
     }        
 }
 
