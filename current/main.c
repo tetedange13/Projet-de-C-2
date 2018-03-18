@@ -39,7 +39,7 @@ point *cast_vertical(matrice *pm, point *coord, point *pix, int scale)
     int j_lim, incr, j_start;
     double GAMMA, DELTA;
     if ( (int) (gamma) == 0) {
-        printf("c'est gamma vert\n");
+        //printf("c'est gamma vert\n");
         return NULL;
     } if (gamma > 0) {
 	    j_start = j_pix + 1;
@@ -61,7 +61,7 @@ point *cast_vertical(matrice *pm, point *coord, point *pix, int scale)
         } if ( (DELTA + coord -> y < 0) || 
            ((int) ((DELTA + coord -> y) / scale) > (pm -> hauteur - 1)) ) {
            //Si le point projete est HORS de l'aire graphique, on arrete  
-            printf("C'est sorti vert\n");
+            //printf("C'est sorti vert\n");
             return NULL;
         /*} if ( ( (int) (DELTA + coord -> y) % scale == 0 ) ||
                (pm->contenu[(int) ((DELTA + coord -> y) / scale)][j - 1] & PD) ) {*/   
@@ -72,7 +72,7 @@ point *cast_vertical(matrice *pm, point *coord, point *pix, int scale)
             return I;
         }
     }
-    printf("C'est la fin vert\n");
+    //printf("C'est la fin vert\n");
 	return NULL;
 }
 
@@ -84,7 +84,7 @@ point *cast_horizontal(matrice *pm, point *coord, point *pix, int scale)
     int i_lim, incr, i_start;
     double GAMMA, DELTA;
     if ( (int) gamma == 0) {
-        printf("c'est gamma horiz\n");
+        //printf("c'est gamma horiz\n");
         return NULL;
     } if (gamma > 0) {
 	    i_start = i_pix + 1;
@@ -106,7 +106,7 @@ point *cast_horizontal(matrice *pm, point *coord, point *pix, int scale)
         } if ( (DELTA + coord -> x < 0) || 
            ((int) ((DELTA + coord -> x) / scale) > (pm -> largeur - 1)) ) {
            //Si le point projete est HORS de l'aire graphique, on arrete
-            printf("C'est sorti horiz\n");
+            //printf("C'est sorti horiz\n");
             return NULL;
         /*} if ( ( (int) (DELTA + coord -> x) % scale == 0 ) ||
              (pm->contenu[i - 1][(int) ((DELTA + coord -> x) / scale)] & PB) )
@@ -118,7 +118,7 @@ point *cast_horizontal(matrice *pm, point *coord, point *pix, int scale)
             return I;
         }
     }
-    printf("C'est la fin horiz\n");
+    //printf("C'est la fin horiz\n");
 	return NULL;
 }
 
@@ -247,6 +247,26 @@ void trapez_cast(matrice *pm, observer *obs, SDL_Renderer *renderer2D,
         } else
             draw_murs(width3D, middle, renderer3D, k_tmp, h_tmp, k, h);
     }        
+}
+
+short test_colli(point *deb, matrice *pm, point *fin, int scale)
+{
+    point *unitaire= malloc(sizeof(point));
+    double distance = dist(deb, fin);
+    unitaire -> x = ( deb -> x - fin -> x ) / distance;
+    unitaire -> y = ( deb -> y - fin -> y ) / distance;
+    int i = 0, coeff_i, coeff_j;
+    while (((int) (unitaire -> x * i + deb -> x) != (int) (fin -> x))&& 
+           ((int) (unitaire -> y * i + deb -> y) != (int) (fin -> y))){
+    //for (i = 0; i < ; i++) {
+        coeff_i = (int) ( ( unitaire -> x * i + deb -> x ) / scale );
+        coeff_j = (int) ( ( unitaire -> y * i + deb -> y ) / scale );
+        if ( (pm->contenu[coeff_i][coeff_j] & PB) ||
+             (pm->contenu[coeff_i][coeff_j] & PD) )
+            return 1;
+        i++;
+    }
+    return 0; //Pas de collision
 }
 
 int main(int argc, char *argv[]) {
