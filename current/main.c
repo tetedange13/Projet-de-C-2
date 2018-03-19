@@ -207,7 +207,6 @@ void trapez_cast(matrice *pm, observer *obs, SDL_Renderer *renderer2D,
     double h;
     int k = -L/2, k_tmp, h_tmp;
     while (k < L/2) {
-        printf("k=%d\n", k);
         point *I = point_impact(obs, k, scale, pm);    
         if (I == NULL) {
             //avance(obs, 1);
@@ -249,24 +248,81 @@ void trapez_cast(matrice *pm, observer *obs, SDL_Renderer *renderer2D,
     }        
 }
 
-short test_colli(point *deb, matrice *pm, point *fin, int scale)
+short pas_dans_mur(point *deb, point *fin, matrice *pm, int scale)
 {
     point *unitaire= malloc(sizeof(point));
     double distance = dist(deb, fin);
     unitaire -> x = ( deb -> x - fin -> x ) / distance;
     unitaire -> y = ( deb -> y - fin -> y ) / distance;
     int i = 0, coeff_i, coeff_j;
-    while (((int) (unitaire -> x * i + deb -> x) != (int) (fin -> x))&& 
-           ((int) (unitaire -> y * i + deb -> y) != (int) (fin -> y))){
-    //for (i = 0; i < ; i++) {
+    while ( ( (int) (unitaire -> x * i + deb -> x) != (int) (fin -> x) ) && 
+            ( (int) (unitaire -> y * i + deb -> y) != (int) (fin -> y) ) ) {
         coeff_i = (int) ( ( unitaire -> x * i + deb -> x ) / scale );
         coeff_j = (int) ( ( unitaire -> y * i + deb -> y ) / scale );
-        if ( (pm->contenu[coeff_i][coeff_j] & PB) ||
-             (pm->contenu[coeff_i][coeff_j] & PD) )
-            return 1;
+        if ( ( (int) (deb -> x) % scale == 0 ) || 
+             ( (int) (fin -> x) % scale == 0 ) ) {
+            if (pm->contenu[coeff_i][coeff_j] & PD) {
+                printf("Collision putain!! i=%d j=%d\n", coeff_i, coeff_j);
+                return 0;
+            }    
+        } else if ( ( (int) (deb -> y) % scale == 0 ) || 
+                    ( (int) (fin -> y) % scale == 0 ) ) { 
+            if (pm->contenu[coeff_i][coeff_j] & PB) {
+                printf("Collision putain!! i=%d j=%d\n", coeff_i, coeff_j);
+                return 0;
+            }
+        }
+        printf("boucle infinie\n");   
         i++;
     }
-    return 0; //Pas de collision
+    return 1; //Pas de collision
+}
+
+void deplacement(observer *obs, SDL_Event event, double *theta, matrice *pm, \
+                 int scale)
+{
+    observer *obs_copy = malloc(sizeof(observer));
+    obs_copy -> sinus = obs -> sinus;
+    obs_copy -> cosinus = obs -> cosinus;
+    point *coord_copy = malloc(sizeof(point));
+    coord_copy -> x = obs -> coord -> x;
+    coord_copy -> y = obs -> coord -> y;
+    obs_copy -> coord = coord_copy; 
+    //printf("adress of copy = %p\n", (void*) (obs -> coord));
+    
+    switch (event.key.keysym.sym) {
+        case SDLK_UP:
+            avance(obs_copy, 5);
+            break;
+        case SDLK_DOWN:
+            avance(obs_copy, -5);
+            break;    
+        case SDLK_LEFT:
+            *theta -= 0.1;
+            rotate(*theta, obs_copy);
+            break;
+        case SDLK_RIGHT:
+            printf("theta=%lf\n", *theta);
+            *theta += 0.1;
+            printf("theta2=%lf\n", *theta);
+            rotate(*theta, obs_copy);
+            break;                
+    } 
+    point *bord_g = coord_pix(D, obs_copy, L/2);
+    point *bord_d = coord_pix(D, obs_copy, -L/2);
+    //Si le deplacement est OK, on bouge:
+    if ( ( pas_dans_mur(bord_d, bord_g, pm, scale) ) &&
+         ( pas_dans_mur(bord_d, obs_copy -> coord, pm, scale) ) &&
+         ( pas_dans_mur(obs_copy -> coord, bord_g, pm, scale) ) ) {
+        printf("on ecrase\n");
+        free(obs);
+        obs = obs_copy;
+    }         
+    //Sinon, il ne se passe rien 
+    free(coord_copy);
+    free(obs_copy);
+    free(bord_d);
+    free(bord_g);
 }
 
 int main(int argc, char *argv[]) {
@@ -346,8 +402,8 @@ int main(int argc, char *argv[]) {
     
     int scale = width2D/(largeur+2);
     point *coord = malloc(sizeof(point));
-    coord -> x = 3*scale;
-    coord -> y = 3*scale;
+    coord -> x = scale + scale/2;
+    coord -> y = scale + 3;
     double theta = PI/3;
     
     observer *obs = malloc(sizeof(observer));
@@ -382,27 +438,28 @@ int main(int argc, char *argv[]) {
                 etat = QUIT;
             } else {
                 if (test) {
-                //On commence par effacer les rendus precedents:
-                SDL_SetRenderDrawColor(renderer2D, 255, 255, 255, 0);
-                SDL_RenderClear(renderer2D); //fond blanc
-                SDL_SetRenderDrawColor(renderer3D, 0, 0, 0, 255);
-                SDL_RenderClear(renderer3D); //fond noir
-                switch (event.key.keysym.sym) {
-                    case SDLK_UP:
-                        avance(obs, 5);
-                        break;
-                    case SDLK_DOWN:
-                        avance(obs, -5);
-                        break;    
-                    case SDLK_LEFT:
-                        theta -= 0.1;
-                        rotate(theta, obs);
-                        break;
-                    case SDLK_RIGHT:
-                        theta += 0.1;
-                        rotate(theta, obs);
-                        break;                
-                }
+                    //On commence par effacer les rendus precedents:
+                    SDL_SetRenderDrawColor(renderer2D, 255, 255, 255, 0);
+                    SDL_RenderClear(renderer2D); //fond blanc
+                    SDL_SetRenderDrawColor(renderer3D, 0, 0, 0, 255);
+                    SDL_RenderClear(renderer3D); //fond noir
+                    deplacement(obs, event, &theta, pm, scale);
+                    /*switch (event.key.keysym.sym) {
+                        case SDLK_UP:
+                            avance(obs, 5);
+                            break;
+                        case SDLK_DOWN:
+                            avance(obs, -5);
+                            break;    
+                        case SDLK_LEFT:
+                            theta -= 0.1;
+                            rotate(theta, obs);
+                            break;
+                        case SDLK_RIGHT:
+                            theta += 0.1;
+                            rotate(theta, obs);
+                            break;                
+                    }*/
                 }
                 //Dans tous les cas on cree un nveau rendu et on l'affiche:
                 SDL_SetRenderDrawColor(renderer3D, 0, 255, 255, 255); //Cyan
