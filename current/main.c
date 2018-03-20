@@ -14,19 +14,15 @@ short est_angle(double coord_x, double coord_y, int scale, matrice *pm)
          ( (int) (coord_y / scale) == pm -> largeur ) ) //En haut a droite
        || ( ( (int) (coord_x / scale) == pm -> largeur ) && 
          ( (int) (coord_y / scale) == 1 ) ) ) //En haut a droite 
-        //printf("haut droite\n");
         return 1;
     if ( ( (int) (coord_x / scale) == 0 ) && 
          ( (int) (coord_y / scale) == 1 ) ) //En haut a gauche
-        //printf("haut gauche\n");         
         return 1;
     if ( ( (int) (coord_x / scale) == pm -> hauteur ) && 
          ( (int) (coord_y / scale) == pm -> largeur ) ) //En bas a droite
-        //printf("bas droite\n");
         return 1;
     if ( ( (int) (coord_x / scale) == 0 ) && 
          ( (int) (coord_y / scale) == pm -> hauteur ) ) //En bas a gauche
-        //printf("bas gauche\n");
         return 1;
     return 0;
 }
@@ -39,7 +35,6 @@ point *cast_vertical(matrice *pm, point *coord, point *pix, int scale)
     int j_lim, incr, j_start;
     double GAMMA, DELTA;
     if ( (int) (gamma) == 0) {
-        //printf("c'est gamma vert\n");
         return NULL;
     } if (gamma > 0) {
 	    j_start = j_pix + 1;
@@ -61,10 +56,7 @@ point *cast_vertical(matrice *pm, point *coord, point *pix, int scale)
         } if ( (DELTA + coord -> y < 0) || 
            ((int) ((DELTA + coord -> y) / scale) > (pm -> hauteur - 1)) ) {
            //Si le point projete est HORS de l'aire graphique, on arrete  
-            //printf("C'est sorti vert\n");
             return NULL;
-        /*} if ( ( (int) (DELTA + coord -> y) % scale == 0 ) ||
-               (pm->contenu[(int) ((DELTA + coord -> y) / scale)][j - 1] & PD) ) {*/   
         } if (pm->contenu[(int) ((DELTA + coord -> y) / scale)][j - 1] & PD) {
             point *I = malloc(sizeof(point));
             I -> x = GAMMA + coord -> x;
@@ -72,7 +64,6 @@ point *cast_vertical(matrice *pm, point *coord, point *pix, int scale)
             return I;
         }
     }
-    //printf("C'est la fin vert\n");
 	return NULL;
 }
 
@@ -84,7 +75,6 @@ point *cast_horizontal(matrice *pm, point *coord, point *pix, int scale)
     int i_lim, incr, i_start;
     double GAMMA, DELTA;
     if ( (int) gamma == 0) {
-        //printf("c'est gamma horiz\n");
         return NULL;
     } if (gamma > 0) {
 	    i_start = i_pix + 1;
@@ -106,11 +96,7 @@ point *cast_horizontal(matrice *pm, point *coord, point *pix, int scale)
         } if ( (DELTA + coord -> x < 0) || 
            ((int) ((DELTA + coord -> x) / scale) > (pm -> largeur - 1)) ) {
            //Si le point projete est HORS de l'aire graphique, on arrete
-            //printf("C'est sorti horiz\n");
-            return NULL;
-        /*} if ( ( (int) (DELTA + coord -> x) % scale == 0 ) ||
-             (pm->contenu[i - 1][(int) ((DELTA + coord -> x) / scale)] & PB) )
-              {*/   
+            return NULL; 
         } if (pm->contenu[i - 1][(int) ((DELTA + coord -> x) / scale)] & PB) {
             point *I = malloc(sizeof(point));
             I -> x = DELTA + coord -> x;
@@ -118,12 +104,11 @@ point *cast_horizontal(matrice *pm, point *coord, point *pix, int scale)
             return I;
         }
     }
-    //printf("C'est la fin horiz\n");
 	return NULL;
 }
 
 point *plus_proche(point *coord, point *I_vert, point *I_horiz)
-{ //Détermine quel point est le plus proche de l'ori
+{ //Determine quel point est le plus proche de l'ori
     int dist_vert = dist(coord, I_vert);
     int dist_horiz = dist(coord, I_horiz);
     if (dist_vert < dist_horiz)
@@ -182,8 +167,6 @@ point *point_impact(observer *obs, int k, int scale, matrice *pm)
     point *pix = coord_pix(D, obs, k);
     point *I_vert = cast_vertical(pm, obs -> coord, pix, scale);
     point *I_horiz = cast_horizontal(pm, obs -> coord, pix, scale);
-    if ( (I_horiz == NULL) && (I_vert == NULL) )
-        printf("c'est la merde\n");
     point *I;
     if ((I_vert != NULL) && (I_horiz != NULL)) {
         I = plus_proche(obs -> coord, I_vert, I_horiz);
@@ -207,7 +190,7 @@ void trapez_cast(matrice *pm, observer *obs, SDL_Renderer *renderer2D,
     double h;
     int k = -L/2, k_tmp, h_tmp;
     while (k < L/2) {
-        point *I = point_impact(obs, k, scale, pm);    
+        point *I = point_impact(obs, k, scale, pm);  
         if (I == NULL) {
             //avance(obs, 1);
             SDL_SetRenderDrawColor(renderer2D, 0, 255, 0, 255);//Vert
@@ -232,10 +215,12 @@ void trapez_cast(matrice *pm, observer *obs, SDL_Renderer *renderer2D,
         current_I -> x = I -> x;
         current_I -> y = I -> y;
         while ( (k < (L/2)) && (meme_case(I, current_I, scale)) ) {
-            free(current_I);
-            current_I = point_impact(obs, ++k, scale, pm);    
+            point *tmp = current_I;
+            current_I = point_impact(obs, ++k, scale, pm);
+            free(tmp);  
         }
         free(current_I);
+        free(I);
         if ( (k - 1) != k_tmp ) {
             current_I = point_impact(obs, k - 1, scale, pm);
             SDL_SetRenderDrawColor(renderer2D, 0, 0, 255, 255);//Bleu
@@ -245,15 +230,16 @@ void trapez_cast(matrice *pm, observer *obs, SDL_Renderer *renderer2D,
             draw_murs(width3D, middle, renderer3D, k_tmp, h_tmp, k, h);
         } else
             draw_murs(width3D, middle, renderer3D, k_tmp, h_tmp, k, h);
-    }        
+    }
+            
 }
 
 short pas_dans_mur(point *deb, point *fin, matrice *pm, int scale)
-{
+{ //A l'air de marcher
     point *unitaire= malloc(sizeof(point));
     double distance = dist(deb, fin);
-    unitaire -> x = ( deb -> x - fin -> x ) / distance;
-    unitaire -> y = ( deb -> y - fin -> y ) / distance;
+    unitaire -> x = ( fin -> x - deb -> x ) / distance;
+    unitaire -> y = ( fin -> y - deb -> y ) / distance;
     int i = 0, coeff_i, coeff_j;
     while ( ( (int) (unitaire -> x * i + deb -> x) != (int) (fin -> x) ) && 
             ( (int) (unitaire -> y * i + deb -> y) != (int) (fin -> y) ) ) {
@@ -262,17 +248,14 @@ short pas_dans_mur(point *deb, point *fin, matrice *pm, int scale)
         if ( ( (int) (deb -> x) % scale == 0 ) || 
              ( (int) (fin -> x) % scale == 0 ) ) {
             if (pm->contenu[coeff_i][coeff_j] & PD) {
-                printf("Collision putain!! i=%d j=%d\n", coeff_i, coeff_j);
                 return 0;
             }    
         } else if ( ( (int) (deb -> y) % scale == 0 ) || 
                     ( (int) (fin -> y) % scale == 0 ) ) { 
             if (pm->contenu[coeff_i][coeff_j] & PB) {
-                printf("Collision putain!! i=%d j=%d\n", coeff_i, coeff_j);
                 return 0;
             }
         }
-        printf("boucle infinie\n");   
         i++;
     }
     return 1; //Pas de collision
@@ -280,16 +263,12 @@ short pas_dans_mur(point *deb, point *fin, matrice *pm, int scale)
 
 void deplacement(observer *obs, SDL_Event event, double *theta, matrice *pm, \
                  int scale)
-{
+{ //Devait empecher de foncer dans les murs, mais marche pas du tout du tout
     observer *obs_copy = malloc(sizeof(observer));
     obs_copy -> sinus = obs -> sinus;
-    obs_copy -> cosinus = obs -> cosinus;
-    point *coord_copy = malloc(sizeof(point));
-    coord_copy -> x = obs -> coord -> x;
-    coord_copy -> y = obs -> coord -> y;
-    obs_copy -> coord = coord_copy; 
-    //printf("adress of copy = %p\n", (void*) (obs -> coord));
-    
+    obs_copy -> cosinus = obs -> cosinus;   
+    obs_copy -> coord -> x = obs -> coord -> x;
+    obs_copy -> coord -> y = obs -> coord -> y;
     switch (event.key.keysym.sym) {
         case SDLK_UP:
             avance(obs_copy, 5);
@@ -302,9 +281,7 @@ void deplacement(observer *obs, SDL_Event event, double *theta, matrice *pm, \
             rotate(*theta, obs_copy);
             break;
         case SDLK_RIGHT:
-            printf("theta=%lf\n", *theta);
             *theta += 0.1;
-            printf("theta2=%lf\n", *theta);
             rotate(*theta, obs_copy);
             break;                
     } 
@@ -314,13 +291,13 @@ void deplacement(observer *obs, SDL_Event event, double *theta, matrice *pm, \
     if ( ( pas_dans_mur(bord_d, bord_g, pm, scale) ) &&
          ( pas_dans_mur(bord_d, obs_copy -> coord, pm, scale) ) &&
          ( pas_dans_mur(obs_copy -> coord, bord_g, pm, scale) ) ) {
-        printf("on ecrase\n");
-        free(obs);
+        observer *tmp = obs;
         obs = obs_copy;
-    }         
-    //Sinon, il ne se passe rien 
-    free(coord_copy);
-    free(obs_copy);
+        free(tmp);
+    } else {        
+        //Sinon, on free la copy
+        free(obs_copy);
+    }
     free(bord_d);
     free(bord_g);
 }
@@ -333,6 +310,7 @@ int main(int argc, char *argv[]) {
     srand(time(NULL));
     gen_laby(tab, pm);
     disp_laby(pm);
+    //1ere fenetre:
     SDL_Window *laby2D = NULL;
     SDL_Renderer *renderer2D = NULL;
     if (SDL_Init(SDL_INIT_VIDEO) != 0) {
@@ -369,7 +347,6 @@ int main(int argc, char *argv[]) {
     }
     SDL_SetRenderDrawColor(renderer2D, 255, 255, 255, 0);
     SDL_RenderClear(renderer2D); //fond blanc
-
     //2e fenetre:
     SDL_Window *laby3D = NULL;
     SDL_Renderer *renderer3D = NULL;
@@ -399,34 +376,26 @@ int main(int argc, char *argv[]) {
     }
     SDL_SetRenderDrawColor(renderer3D, 255, 255, 255, 0);
     SDL_RenderClear(renderer3D); //fond blanc    
-    
     int scale = width2D/(largeur+2);
     point *coord = malloc(sizeof(point));
-    coord -> x = scale + scale/2;
-    coord -> y = scale + 3;
+    coord -> x = 3 * scale;
+    coord -> y = 3 * scale;
     double theta = PI/3;
-    
     observer *obs = malloc(sizeof(observer));
     obs -> coord = coord;
     obs -> sinus = sin(theta);
     obs -> cosinus = cos(theta);
-    
     point *middle = malloc(sizeof(point));
     middle -> x = width3D / 2;
     middle -> y = height3D / 2;
-    
     short test = 1;
-    //RAY CASTING:
     trapez_cast(pm, obs, renderer2D, renderer3D, scale, width3D, height3D, 
                 middle, &test);
-     
     SDL_SetRenderDrawColor(renderer2D, 0, 0, 0, 255);
     draw_laby(pm, scale, renderer2D);
     draw_cone(obs, renderer2D);
-    
     SDL_RenderPresent(renderer2D);
-    SDL_RenderPresent(renderer3D);
-       
+    SDL_RenderPresent(renderer3D);     
     status etat = CONTINUE;
     SDL_Event event;
     while (etat != QUIT)
@@ -441,10 +410,10 @@ int main(int argc, char *argv[]) {
                     //On commence par effacer les rendus precedents:
                     SDL_SetRenderDrawColor(renderer2D, 255, 255, 255, 0);
                     SDL_RenderClear(renderer2D); //fond blanc
-                    SDL_SetRenderDrawColor(renderer3D, 0, 0, 0, 255);
+                    SDL_SetRenderDrawColor(renderer3D, 0, 0, 0, 255); //Noir
                     SDL_RenderClear(renderer3D); //fond noir
-                    deplacement(obs, event, &theta, pm, scale);
-                    /*switch (event.key.keysym.sym) {
+                    //deplacement(obs, event, &theta, pm, scale);
+                    switch (event.key.keysym.sym) {
                         case SDLK_UP:
                             avance(obs, 5);
                             break;
@@ -459,7 +428,7 @@ int main(int argc, char *argv[]) {
                             theta += 0.1;
                             rotate(theta, obs);
                             break;                
-                    }*/
+                    }
                 }
                 //Dans tous les cas on cree un nveau rendu et on l'affiche:
                 SDL_SetRenderDrawColor(renderer3D, 0, 255, 255, 255); //Cyan
@@ -467,7 +436,7 @@ int main(int argc, char *argv[]) {
                             height3D, middle, &test); 
                 SDL_SetRenderDrawColor(renderer2D, 0, 0, 0, 255); //Noir
                 draw_laby(pm, scale, renderer2D);
-                draw_cone(obs, renderer2D);                                     
+                draw_cone(obs, renderer2D);
                 SDL_RenderPresent(renderer2D);
                 SDL_RenderPresent(renderer3D);
             }
