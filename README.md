@@ -1,3 +1,3 @@
-# Projet-de-C-2
+# C-project
 
 Random maze generation and 2.5D graphics by raycasting
